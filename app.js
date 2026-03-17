@@ -15,25 +15,25 @@ const CLIENTE_DATA = {
         {
             nombre: "Podologia clinica",
             desc: "Atencion profesional para aliviar molestias, tratar unas encarnadas, callosidades y cuidar la salud de tus pies.",
-            imagen: "img/servicio-podologia-clinica.png",
+            imagen: "img/servicio-podologia-clinica.webp",
             alt: "Tratamiento profesional de podologia clinica"
         },
         {
             nombre: "Pedicuria estetica",
             desc: "Un servicio pensado para mantener tus pies prolijos, suaves y bien cuidados con una terminacion impecable.",
-            imagen: "img/servicio-pedicuria-estetica.png",
+            imagen: "img/servicio-pedicuria-estetica.webp",
             alt: "Servicio de pedicuria estetica"
         },
         {
             nombre: "Esmaltado semipermanente",
             desc: "Color, brillo y duracion con aplicacion cuidadosa para lograr un resultado delicado, elegante y duradero.",
-            imagen: "img/servicio-esmaltado-semipermanente.png",
+            imagen: "img/servicio-esmaltado-semipermanente.webp",
             alt: "Esmaltado semipermanente en pies"
         },
         {
             nombre: "Spa de pies",
             desc: "Exfoliacion, hidratacion profunda y masajes relajantes para renovar tus pies y regalarte un momento de bienestar.",
-            imagen: "img/servicio-spa-de-pies.png",
+            imagen: "img/servicio-spa-de-pies.webp",
             alt: "Spa de pies con tratamiento relajante"
         }
     ]

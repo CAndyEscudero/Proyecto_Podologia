@@ -52,35 +52,6 @@ Desde ahi podes cambiar:
 - imagenes de cada servicio
 - WhatsApp del desarrollador al pie
 
-## Imagenes usadas
-
-El proyecto usa imagenes en formato `.webp` para mejorar el rendimiento:
-
-- `img/01_salud_para_tus_pies.webp`
-- `img/Gemini_Generated_Image_fdx4jjfdx4jjfdx4.webp`
-- `img/local-gabinete.webp`
-- `img/servicio-podologia-clinica.webp`
-- `img/servicio-pedicuria-estetica.webp`
-- `img/servicio-esmaltado-semipermanente.webp`
-- `img/servicio-spa-de-pies.webp`
-
-## Como usarlo localmente
-
-Como es un proyecto estatico, podes abrir `index.html` directamente en el navegador.
-
-Si preferis levantar un servidor local, por ejemplo con VS Code:
-
-1. Instalar la extension `Live Server`
-2. Abrir el proyecto
-3. Ejecutar `Open with Live Server`
-
-## Deploy en Vercel
-
-1. Subir el proyecto a GitHub
-2. Entrar a `https://vercel.com`
-3. Importar el repositorio
-4. Dejar la configuracion por defecto como proyecto estatico
-5. Hacer click en `Deploy`
 
 ## Estado del proyecto
 
@@ -92,13 +63,6 @@ Actualmente esta preparado como demo comercial funcional:
 - footer con contacto del desarrollador
 - estructura lista para adaptar a clientes reales
 
-## Proximos pasos sugeridos
-
-- reemplazar datos demo por datos reales del cliente
-- conectar dominio personalizado
-- ajustar imagenes finales del local o gabinete
-- sumar favicon
-- crear una web personal del desarrollador para reemplazar el link temporal de WhatsApp
 
 ## Autor
 

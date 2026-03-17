@@ -1,7 +1,7 @@
 const CLIENTE_DATA = {
     nombreLocal: "Pies Sanos Venado",
-    telefonoWsp: "5493462646536",
-    telefonoVisible: "+54 9 3462 64-6536",
+    telefonoWsp: "5",
+    telefonoVisible: "+54 9 ",
     slogan: "Pedicuria y podologia profesional",
     metaDescription: "Pedicuria y podologia profesional en Venado Tuerto. Reserva tu turno por WhatsApp y recibi una atencion cuidadosa, higienica y personalizada.",
     mensajeBase: "Hola! Quiero reservar un turno para ",

@@ -164,7 +164,7 @@ section {
     background:
         linear-gradient(90deg, rgba(37, 26, 31, 0.58) 0%, rgba(37, 26, 31, 0.3) 42%, rgba(37, 26, 31, 0.16) 100%),
         linear-gradient(180deg, rgba(255, 247, 244, 0.3), rgba(255, 247, 244, 0.05)),
-        url("img/01_salud_para_tus_pies.webp") center right/cover no-repeat;
+        url("img/01_salud_para_tus_pies.png") center right/cover no-repeat;
     color: #fff8f6;
     display: flex;
     align-items: center;

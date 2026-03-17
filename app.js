@@ -9,6 +9,8 @@ const CLIENTE_DATA = {
     direccion: "Av. Casey 123, Venado Tuerto",
     localidad: "Venado Tuerto, Santa Fe",
     instagram: "https://instagram.com/piessanosvt",
+    developerWsp: "5493462591151",
+    developerMessage: "Hola! Vi tu demo y quiero consultar por una landing similar.",
     servicios: [
         {
             nombre: "Podologia clinica",
@@ -74,6 +76,11 @@ function cargarLanding() {
     const instaLink = document.getElementById("insta-link");
     if (instaLink) {
         instaLink.href = CLIENTE_DATA.instagram;
+    }
+
+    const developerLink = document.getElementById("developer-wsp");
+    if (developerLink) {
+        developerLink.href = `https://wa.me/${CLIENTE_DATA.developerWsp}?text=${encodeURIComponent(CLIENTE_DATA.developerMessage)}`;
     }
 
     const phoneLink = document.getElementById("contacto-tel-link");

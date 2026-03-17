@@ -771,6 +771,28 @@ footer {
     gap: 16px;
 }
 
+.developer-credit {
+    padding-top: 10px;
+    text-align: center;
+}
+
+.developer-credit p {
+    margin: 0;
+    color: var(--secondary-soft);
+    font-size: 0.95rem;
+}
+
+.developer-credit a {
+    color: var(--primary-dark);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.developer-credit a:hover,
+.developer-credit a:focus-visible {
+    color: var(--primary);
+}
+
 .social-links a {
     color: var(--primary-dark);
     font-weight: 800;

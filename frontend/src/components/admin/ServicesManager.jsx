@@ -111,7 +111,13 @@ export function ServicesManager({
                       <span>Slug: {service.slug}</span>
                       <span>
                         Precio:{" "}
-                        {service.priceCents ? `$${(service.priceCents / 100).toLocaleString("es-AR")}` : "A consultar"}
+                        {service.priceCents
+                          ? new Intl.NumberFormat("es-AR", {
+                              style: "currency",
+                              currency: "ARS",
+                              maximumFractionDigits: 0,
+                            }).format(service.priceCents)
+                          : "A consultar"}
                       </span>
                     </div>
                   </div>
@@ -204,7 +210,7 @@ export function ServicesManager({
                 {errors.priceCents ? (
                   <span className="mt-2 block text-xs text-red-500">{errors.priceCents.message}</span>
                 ) : (
-                  <span className="mt-2 block text-xs text-slate-500">Cargalo en centavos. Ejemplo: 25000 = $250.</span>
+                  <span className="mt-2 block text-xs text-slate-500">Cargalo en pesos argentinos. Ejemplo: 25000 = ARS 25.000.</span>
                 )}
               </label>
             </div>

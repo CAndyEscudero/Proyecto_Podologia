@@ -1,9 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  LoaderCircle,
+  Sparkles,
+  Stethoscope,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { createAppointment, getAvailableSlots, getPublicServices } from "../../services/publicApi";
 import { Button } from "../ui/Button";
@@ -11,7 +21,7 @@ import { BookingCalendar } from "./BookingCalendar";
 
 const today = dayjs().format("YYYY-MM-DD");
 const maxBookingDate = dayjs().add(45, "day").format("YYYY-MM-DD");
-const personNameRegex = /^[A-Za-zÀ-ÿ' -]{2,80}$/;
+const personNameRegex = /^[\p{L}' -]{2,80}$/u;
 const phoneRegex = /^[0-9+() -]{8,20}$/;
 
 const bookingSchema = z.object({
@@ -29,6 +39,13 @@ const bookingSchema = z.object({
   email: z.string().trim().max(120, "Email demasiado largo").email("Ingresa un email valido"),
   notes: z.string().trim().max(1000, "Las observaciones son demasiado largas").optional(),
 });
+
+const steps = [
+  { id: 1, label: "Servicio", copy: "Elegi el tratamiento que queres reservar." },
+  { id: 2, label: "Dia", copy: "Busca la fecha que mejor se adapte a tu agenda." },
+  { id: 3, label: "Horario", copy: "Selecciona un horario disponible real." },
+  { id: 4, label: "Tus datos", copy: "Completa tus datos para confirmar la solicitud." },
+];
 
 export function BookingForm() {
   const [services, setServices] = useState([]);
@@ -67,6 +84,7 @@ export function BookingForm() {
 
   const selectedService = services.find((service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
+  const activeStep = steps.find((item) => item.id === step) || steps[0];
 
   useEffect(() => {
     async function fetchServices() {
@@ -115,17 +133,14 @@ export function BookingForm() {
     fetchSlots();
   }, [serviceId, date]);
 
-  useEffect(() => {
-    if (date && step === 1) {
-      setStep(2);
-    }
-  }, [date, step]);
-
-  useEffect(() => {
-    if (startTime && step <= 2) {
-      setStep(3);
-    }
-  }, [startTime, step]);
+  const serviceCards = useMemo(
+    () =>
+      services.map((service) => ({
+        ...service,
+        priceLabel: formatPrice(service.priceCents),
+      })),
+    [services]
+  );
 
   async function onSubmit(values) {
     try {
@@ -162,7 +177,7 @@ export function BookingForm() {
     }
   }
 
-  function handleServiceChange(nextValue) {
+  function handleServiceSelect(nextValue) {
     setValue("serviceId", nextValue, {
       shouldDirty: true,
       shouldTouch: true,
@@ -170,9 +185,9 @@ export function BookingForm() {
     });
     setValue("date", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
     setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
-    setStep(1);
     setSlots([]);
     setAvailabilityError("");
+    setStep(2);
   }
 
   function handleDateChange(nextDate) {
@@ -186,7 +201,7 @@ export function BookingForm() {
       shouldTouch: true,
       shouldValidate: true,
     });
-    setStep(2);
+    setStep(3);
   }
 
   function handleSlotChange(nextStartTime) {
@@ -195,7 +210,7 @@ export function BookingForm() {
       shouldTouch: true,
       shouldValidate: true,
     });
-    setStep(3);
+    setStep(4);
   }
 
   function handleResetFlow() {
@@ -206,222 +221,366 @@ export function BookingForm() {
     setStep(1);
   }
 
+  function handleBackToServices() {
+    setValue("date", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
+    setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
+    setSlots([]);
+    setAvailabilityError("");
+    setStep(1);
+  }
+
+  function handleBackToDateStep() {
+    setValue("startTime", "", {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: false,
+    });
+    setStep(2);
+  }
+
+  function handleBackToTimeStep() {
+    setStep(3);
+  }
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.24fr_0.76fr] lg:items-start">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="card-surface p-6 md:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">Paso 1</p>
-              <h2 className="mt-1 font-display text-3xl leading-none text-brand-ink md:text-[3.6rem]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_360px] lg:items-start xl:grid-cols-[minmax(0,1.08fr)_390px]">
+      <div className="card-surface overflow-hidden bg-white/92">
+        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-white to-rose-50/70 px-5 py-5 md:px-7 md:py-6">
+          <div className="min-w-0">
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">
+                Paso {activeStep.id}
+              </p>
+              <h2 className="mt-2 font-display text-[2.7rem] leading-none text-brand-ink md:text-[3.35rem]">
                 Elegi servicio, fecha y horario
               </h2>
-            </div>
-            <div className="rounded-full bg-rose-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-wine">
-              Reserva guiada
-            </div>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">{activeStep.copy}</p>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <Field label="Servicio" error={errors.serviceId?.message || servicesError}>
-              <select
-                data-testid="booking-service-select"
-                value={serviceId}
-                onChange={(event) => handleServiceChange(event.target.value)}
-                className="field-input"
-                disabled={isLoadingServices}
-              >
-                <option value="">
-                  {isLoadingServices ? "Cargando servicios..." : "Selecciona una opcion"}
-                </option>
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
-                  </option>
-                ))}
-              </select>
-              <input type="hidden" {...register("serviceId")} />
-            </Field>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {steps.map((item) => {
+              const isActive = item.id === step;
+              const isCompleted =
+                (item.id === 1 && selectedService) ||
+                (item.id === 2 && date) ||
+                (item.id === 3 && startTime) ||
+                (item.id === 4 && confirmation);
 
-            {selectedService ? (
-              <div className="rounded-[1.4rem] border border-rose-100 bg-white p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-brand-wine">
-                      {selectedService.name}
-                    </p>
-                    <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
-                      {selectedService.description}
-                    </p>
-                  </div>
-                  <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-brand-wine">
-                    {selectedService.durationMin} min
+              return (
+                <div
+                  key={item.id}
+                  className={[
+                    "rounded-[1.35rem] border px-4 py-3 transition",
+                    isActive
+                      ? "border-brand-rose bg-rose-50 shadow-soft"
+                      : isCompleted
+                        ? "border-emerald-100 bg-emerald-50/70"
+                        : "border-rose-100 bg-white/70",
+                  ].join(" ")}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">
+                        Paso {item.id}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-brand-ink">{item.label}</p>
+                    </div>
+                    <span
+                      className={[
+                        "inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold",
+                        isActive
+                          ? "bg-brand-rose text-white"
+                          : isCompleted
+                            ? "bg-emerald-500 text-white"
+                            : "bg-rose-100 text-brand-wine",
+                      ].join(" ")}
+                    >
+                      {isCompleted ? "✓" : item.id}
+                    </span>
                   </div>
                 </div>
-              </div>
-            ) : null}
-
-            <div className="overflow-hidden rounded-[1.7rem] border border-rose-100/80 bg-gradient-to-b from-white to-rose-50/40">
-              <div
-                className="flex transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(-${(step - 1) * 100}%)` }}
-              >
-                <section data-testid="booking-step-date" className="min-w-full p-4 md:p-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
-                        Fecha de atencion
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Elegi el dia y avanzamos al horario disponible.
-                      </p>
-                    </div>
-                    {date ? (
-                      <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-brand-wine">
-                        {dayjs(date).format("DD/MM")}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <Field label="" error={errors.date?.message}>
-                    <BookingCalendar
-                      value={date}
-                      minDate={today}
-                      maxDate={maxBookingDate}
-                      onChange={handleDateChange}
-                    />
-                    <input type="hidden" {...register("date")} />
-                  </Field>
-                </section>
-
-                <section data-testid="booking-step-time" className="min-w-full p-4 md:p-5">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
-                        Horario disponible
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {date ? `Horarios para ${dayjs(date).format("DD/MM/YYYY")}` : "Elegi una fecha para ver horarios"}
-                      </p>
-                    </div>
-                    <Button type="button" variant="secondary" className="gap-2" onClick={() => setStep(1)}>
-                      <ArrowLeft size={16} />
-                      Cambiar dia
-                    </Button>
-                  </div>
-
-                  <Field label="" error={errors.startTime?.message || availabilityError}>
-                    <div className="rounded-[1.4rem] border border-rose-200/80 bg-white p-3.5 md:p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-brand-ink">
-                          <Clock3 size={16} className="text-brand-wine" />
-                          Horarios reales disponibles
-                        </div>
-                        {isLoadingSlots ? (
-                          <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                            <LoaderCircle size={16} className="animate-spin" />
-                            Cargando disponibilidad
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {date && !isLoadingSlots && slots.length > 0 ? (
-                        <div data-testid="booking-slots-grid" className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-4">
-                          {slots.map((slot) => {
-                            const isSelected = startTime === slot.startTime;
-
-                            return (
-                              <button
-                                key={slot.startTime}
-                                type="button"
-                                onClick={() => handleSlotChange(slot.startTime)}
-                                data-testid={`booking-slot-${slot.startTime}`}
-                                aria-label={`Seleccionar horario ${slot.startTime}`}
-                                className={[
-                                  "rounded-xl border px-3 py-2.5 text-left transition",
-                                  isSelected
-                                    ? "border-brand-rose bg-brand-rose text-white shadow-lg shadow-rose-200/70"
-                                    : "border-rose-100 bg-rose-50/50 text-brand-ink hover:border-brand-rose hover:bg-white",
-                                ].join(" ")}
-                              >
-                                <span className="block text-sm font-extrabold">{slot.startTime}</span>
-                                <span
-                                  className={
-                                    isSelected
-                                      ? "mt-1 block text-[11px] text-rose-50"
-                                      : "mt-1 block text-[11px] text-slate-500"
-                                  }
-                                >
-                                  hasta {slot.endTime}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-                    </div>
-                    <input type="hidden" {...register("startTime")} />
-                  </Field>
-                </section>
-
-                <section data-testid="booking-step-client" className="min-w-full p-4 md:p-5">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Tus datos</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Completa tus datos para confirmar el turno.
-                      </p>
-                    </div>
-                    <Button type="button" variant="secondary" className="gap-2" onClick={() => setStep(2)}>
-                      <ArrowLeft size={16} />
-                      Cambiar horario
-                    </Button>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Nombre" error={errors.firstName?.message}>
-                      <input data-testid="booking-first-name" type="text" {...register("firstName")} className="field-input" />
-                    </Field>
-
-                    <Field label="Apellido" error={errors.lastName?.message}>
-                      <input data-testid="booking-last-name" type="text" {...register("lastName")} className="field-input" />
-                    </Field>
-
-                    <Field label="Telefono" error={errors.phone?.message}>
-                      <input data-testid="booking-phone" type="tel" {...register("phone")} className="field-input" />
-                    </Field>
-
-                    <Field label="Email" error={errors.email?.message}>
-                      <input data-testid="booking-email" type="email" {...register("email")} className="field-input" />
-                    </Field>
-
-                    <div className="md:col-span-2">
-                      <Field label="Observaciones">
-                        <textarea
-                          data-testid="booking-notes"
-                          rows="4"
-                          {...register("notes")}
-                          className="field-input min-h-[110px] resize-none py-3"
-                          placeholder="Contanos si hay alguna molestia, antecedente o comentario util para la atencion."
-                        />
-                      </Field>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex flex-wrap gap-4">
-                    <Button data-testid="booking-submit" type="submit" className="gap-2" disabled={isSubmitting}>
-                      {isSubmitting ? "Confirmando..." : "Confirmar solicitud"}
-                      {!isSubmitting ? <ArrowRight size={16} /> : null}
-                    </Button>
-                  </div>
-                </section>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
-      </form>
 
-      <aside className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-4 md:p-6">
+          <input type="hidden" {...register("serviceId")} />
+          <input type="hidden" {...register("date")} />
+          <input type="hidden" {...register("startTime")} />
+
+          <div className="rounded-[1.85rem] border border-rose-100/80 bg-gradient-to-b from-white to-rose-50/35">
+            {step === 1 ? (
+              <section data-testid="booking-step-service" className="min-w-full p-4 md:p-5">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                      Paso 1
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      En vez de un selector simple, te mostramos cada servicio como una opcion clara y accionable.
+                    </p>
+                  </div>
+                </div>
+
+                <Field label="" error={errors.serviceId?.message || servicesError}>
+                  {isLoadingServices ? (
+                    <div className="rounded-[1.5rem] border border-rose-100 bg-white px-4 py-10 text-sm text-slate-500">
+                      Cargando servicios...
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {serviceCards.map((service) => {
+                        const isSelected = String(service.id) === serviceId;
+
+                        return (
+                          <button
+                            key={service.id}
+                            type="button"
+                            data-testid={`booking-service-card-${service.id}`}
+                            onClick={() => handleServiceSelect(String(service.id))}
+                            className={[
+                              "rounded-[1.7rem] border px-4 py-4 text-left transition md:px-5 md:py-5",
+                              isSelected
+                                ? "border-brand-rose bg-gradient-to-br from-[#9e6b78] to-[#ca94a2] text-white shadow-xl shadow-rose-300/35"
+                                : "border-rose-100 bg-white hover:-translate-y-0.5 hover:border-brand-rose hover:shadow-soft",
+                            ].join(" ")}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p
+                                  className={[
+                                    "text-lg font-bold",
+                                    isSelected ? "text-white" : "text-brand-ink",
+                                  ].join(" ")}
+                                >
+                                  {service.name}
+                                </p>
+                                <p
+                                  className={[
+                                    "mt-2 text-sm leading-6",
+                                    isSelected ? "text-rose-50/90" : "text-slate-600",
+                                  ].join(" ")}
+                                >
+                                  {service.description}
+                                </p>
+                              </div>
+
+                              <div
+                                className={[
+                                  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
+                                  isSelected
+                                    ? "border-white/35 bg-white/10 text-white"
+                                    : "border-rose-200 bg-rose-50 text-brand-wine",
+                                ].join(" ")}
+                              >
+                                <Stethoscope size={18} />
+                              </div>
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex flex-wrap gap-2">
+                                <span
+                                  className={[
+                                    "rounded-full px-3 py-1 text-xs font-bold",
+                                    isSelected ? "bg-white/15 text-white" : "bg-rose-100 text-brand-wine",
+                                  ].join(" ")}
+                                >
+                                  {service.durationMin} min
+                                </span>
+                                <span
+                                  className={[
+                                    "rounded-full px-3 py-1 text-xs font-bold",
+                                    isSelected ? "bg-white/15 text-white" : "bg-slate-100 text-slate-700",
+                                  ].join(" ")}
+                                >
+                                  {service.priceLabel}
+                                </span>
+                              </div>
+
+                              <span
+                                className={[
+                                  "inline-flex items-center gap-2 text-sm font-bold",
+                                  isSelected ? "text-white" : "text-brand-wine",
+                                ].join(" ")}
+                              >
+                                Elegir servicio
+                                <ChevronRight size={16} />
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Field>
+              </section>
+            ) : null}
+
+            {step === 2 ? (
+              <section data-testid="booking-step-date" className="min-w-full p-4 md:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                      Paso 2
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Busca un dia disponible. Si queres cambiar el servicio, podes volver atras sin perder el control del flujo.
+                    </p>
+                  </div>
+                  <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToServices}>
+                    <ArrowLeft size={16} />
+                    Cambiar servicio
+                  </Button>
+                </div>
+
+                <Field label="" error={errors.date?.message}>
+                  <BookingCalendar
+                    value={date}
+                    minDate={today}
+                    maxDate={maxBookingDate}
+                    onChange={handleDateChange}
+                  />
+                </Field>
+              </section>
+            ) : null}
+
+            {step === 3 ? (
+              <section data-testid="booking-step-time" className="min-w-full p-4 md:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                      Paso 3
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Horarios reales disponibles para {date ? dayjs(date).format("DD/MM/YYYY") : "la fecha elegida"}.
+                    </p>
+                  </div>
+                  <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToDateStep}>
+                    <ArrowLeft size={16} />
+                    Cambiar dia
+                  </Button>
+                </div>
+
+                <Field label="" error={errors.startTime?.message || availabilityError}>
+                  <div className="rounded-[1.45rem] border border-rose-200/80 bg-white p-4 md:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-brand-ink">
+                        <Clock3 size={16} className="text-brand-wine" />
+                        Horarios disponibles
+                      </div>
+                      {isLoadingSlots ? (
+                        <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+                          <LoaderCircle size={16} className="animate-spin" />
+                          Cargando disponibilidad
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {date && !isLoadingSlots && slots.length > 0 ? (
+                      <div
+                        data-testid="booking-slots-grid"
+                        className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
+                      >
+                        {slots.map((slot) => {
+                          const isSelected = startTime === slot.startTime;
+
+                          return (
+                            <button
+                              key={slot.startTime}
+                              type="button"
+                              onClick={() => handleSlotChange(slot.startTime)}
+                              data-testid={`booking-slot-${slot.startTime}`}
+                              aria-label={`Seleccionar horario ${slot.startTime}`}
+                              className={[
+                                "rounded-[1.15rem] border px-4 py-3 text-left transition",
+                                isSelected
+                                  ? "border-brand-rose bg-brand-rose text-white shadow-lg shadow-rose-200/70"
+                                  : "border-rose-100 bg-rose-50/55 text-brand-ink hover:border-brand-rose hover:bg-white",
+                              ].join(" ")}
+                            >
+                              <span className="block text-sm font-extrabold">{slot.startTime}</span>
+                              <span
+                                className={[
+                                  "mt-1 block text-[11px]",
+                                  isSelected ? "text-rose-50" : "text-slate-500",
+                                ].join(" ")}
+                              >
+                                hasta {slot.endTime}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : date && !isLoadingSlots ? (
+                      <div className="mt-4 rounded-[1.2rem] border border-dashed border-rose-200 bg-rose-50/45 px-4 py-6 text-sm text-slate-500">
+                        No hay horarios disponibles para este dia. Probá otra fecha desde el boton "Cambiar dia".
+                      </div>
+                    ) : null}
+                  </div>
+                </Field>
+              </section>
+            ) : null}
+
+            {step === 4 ? (
+              <section data-testid="booking-step-client" className="min-w-full p-4 md:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                      Paso 4
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Ya tenes todo elegido. Solo falta completar tus datos para enviar la solicitud.
+                    </p>
+                  </div>
+                  <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToTimeStep}>
+                    <ArrowLeft size={16} />
+                    Cambiar horario
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Nombre" error={errors.firstName?.message}>
+                    <input data-testid="booking-first-name" type="text" {...register("firstName")} className="field-input" />
+                  </Field>
+
+                  <Field label="Apellido" error={errors.lastName?.message}>
+                    <input data-testid="booking-last-name" type="text" {...register("lastName")} className="field-input" />
+                  </Field>
+
+                  <Field label="Telefono" error={errors.phone?.message}>
+                    <input data-testid="booking-phone" type="tel" {...register("phone")} className="field-input" />
+                  </Field>
+
+                  <Field label="Email" error={errors.email?.message}>
+                    <input data-testid="booking-email" type="email" {...register("email")} className="field-input" />
+                  </Field>
+
+                  <div className="md:col-span-2">
+                    <Field label="Observaciones">
+                      <textarea
+                        data-testid="booking-notes"
+                        rows="4"
+                        {...register("notes")}
+                        className="field-input min-h-[110px] resize-none py-3"
+                        placeholder="Contanos si hay alguna molestia, antecedente o comentario util para la atencion."
+                      />
+                    </Field>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-4">
+                  <Button data-testid="booking-submit" type="submit" className="gap-2" disabled={isSubmitting}>
+                    {isSubmitting ? "Confirmando..." : "Confirmar solicitud"}
+                    {!isSubmitting ? <ArrowRight size={16} /> : null}
+                  </Button>
+                </div>
+              </section>
+            ) : null}
+          </div>
+        </form>
+      </div>
+
+      <aside className="space-y-5 lg:sticky lg:top-24">
         <div className="card-surface p-6 md:p-7">
           <div className="flex items-center gap-2 text-brand-wine">
             <CalendarDays size={20} />
@@ -446,11 +605,51 @@ export function BookingForm() {
               </div>
             </div>
           ) : (
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <p><strong>Servicio:</strong> {selectedService?.name || "Pendiente"}</p>
-              <p><strong>Fecha:</strong> {date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"}</p>
-              <p><strong>Horario:</strong> {selectedSlot?.startTime || "Pendiente"}</p>
-              {selectedSlot ? <p><strong>Finaliza:</strong> {selectedSlot.endTime}</p> : null}
+            <div className="mt-4 space-y-4 text-sm text-slate-600">
+              <div className="rounded-[1.55rem] border border-rose-100 bg-gradient-to-br from-[#9e6b78] to-[#ca94a2] p-5 text-white shadow-xl shadow-rose-300/30">
+                <div className="flex items-center gap-2 text-rose-50">
+                  <Sparkles size={16} />
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em]">Servicio</p>
+                </div>
+
+                {selectedService ? (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-semibold">{selectedService.name}</p>
+                        <p className="mt-2 text-sm leading-6 text-rose-50/90">{selectedService.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold">
+                        {selectedService.durationMin} min
+                      </span>
+                      <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold">
+                        {formatPrice(selectedService.priceCents)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm leading-6 text-rose-50/90">
+                    Elegi un servicio para abrir el flujo y ver el resumen completo de la reserva.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-[1.4rem] border border-rose-100 bg-rose-50/40 p-4">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Tu seleccion</p>
+                <div className="mt-3 space-y-3">
+                  <SummaryRow label="Servicio" value={selectedService?.name || "Pendiente"} />
+                  <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
+                  <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
+                  <SummaryRow label="Finaliza" value={selectedSlot?.endTime || "Pendiente"} />
+                </div>
+              </div>
+
+              <div className="rounded-[1.25rem] border border-dashed border-rose-200 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-500">
+                El resumen se comporta como un panel de seguimiento del turno: ves el servicio elegido, el dia, el horario y lo que falta completar en cada paso.
+              </div>
             </div>
           )}
         </div>
@@ -467,4 +666,27 @@ function Field({ label, error, children }) {
       {error ? <span className="mt-2 block text-xs font-medium text-red-500">{error}</span> : null}
     </label>
   );
+}
+
+function SummaryRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="font-semibold text-brand-ink">{label}:</span>
+      <span className="text-right text-slate-600">{value}</span>
+    </div>
+  );
+}
+
+function formatPrice(priceCents) {
+  if (!priceCents) {
+    return "Consultar";
+  }
+
+  const formatter = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
+
+  return formatter.format(priceCents);
 }

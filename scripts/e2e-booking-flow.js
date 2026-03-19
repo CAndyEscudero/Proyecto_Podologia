@@ -65,12 +65,10 @@ async function run() {
 
     await page.goto(`${BASE_URL}/reservas`, { waitUntil: "networkidle", timeout: 30000 });
 
-    const serviceSelect = page.getByTestId("booking-service-select");
-    await serviceSelect.waitFor({ timeout: 15000 });
-    const options = await serviceSelect.locator("option").allTextContents();
-    result.servicesLoaded = options.length > 1;
-
-    await serviceSelect.selectOption(String(scenario.service.id));
+    const serviceCard = page.getByTestId(`booking-service-card-${scenario.service.id}`);
+    await serviceCard.waitFor({ timeout: 15000 });
+    result.servicesLoaded = (await page.locator('[data-testid^="booking-service-card-"]').count()) > 0;
+    await serviceCard.click();
     result.selectedService = scenario.service.name;
 
     const today = new Date();

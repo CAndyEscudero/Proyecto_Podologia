@@ -1,0 +1,19 @@
+{
+  "name": "podologia-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "db:up": "docker compose up -d mysql adminer",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mysql",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "prisma:migrate": "npm --prefix backend run prisma:migrate",
+    "prisma:seed": "npm --prefix backend run prisma:seed"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
+}

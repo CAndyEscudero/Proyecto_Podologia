@@ -1,71 +1,75 @@
-# Proyecto Podologia
+# Proyecto Podologia - Rebuild Fullstack
 
-Landing page demo para un centro de pedicuria y podologia, pensada para mostrar a clientes y reutilizar como base comercial para otros proyectos del mismo estilo.
+Esta version reorganiza el sitio actual en una base fullstack profesional con:
 
-## Demo
+- `frontend/`: React + Vite + Tailwind + React Router.
+- `backend/`: Express + Prisma + MySQL + JWT.
+- `docs/ARCHITECTURE.md`: arquitectura, endpoints, esquema y roadmap.
+- `docs/CHECKLIST.md`: estado actual, checklist de continuidad y proximos pasos recomendados.
 
-Proyecto estatico preparado para deploy rapido en Vercel o cualquier hosting simple.
+## Variables de entorno
 
-## Caracteristicas
+Copiar:
 
-- Landing comercial enfocada en conversion por WhatsApp
-- Diseno limpio, femenino, moderno y profesional
-- Servicios renderizados dinamicamente desde `app.js`
-- Secciones de testimonios, FAQ, espacio/local y cierre comercial
-- Responsive para mobile, tablet y desktop
-- Imagenes optimizadas en formato WebP
-- SEO basico con meta description, Open Graph y JSON-LD
-- Animaciones suaves al hacer scroll
+- `frontend/.env.example` -> `frontend/.env`
+- `backend/.env.example` -> `backend/.env`
 
-## Tecnologias
+Tambien deje creados los `.env` locales listos para desarrollo.
 
-- HTML
-- CSS
-- JavaScript vanilla
+## Entorno local completo
 
-## Estructura
+### Servicios locales
 
-```text
-.
-|-- index.html
-|-- style.css
-|-- app.js
-|-- README.md
-`-- img/
+- MySQL 8 por Docker en `localhost:3307`
+- Adminer en `http://localhost:8080`
+- Frontend Vite en `http://localhost:5173`
+- Backend Express en `http://localhost:4000`
+
+### Credenciales locales
+
+- Base de datos: `podologia_app`
+- Credenciales y secretos locales: definidos en `backend/.env`
+- Archivo versionado de referencia: `backend/.env.example`
+
+### Comandos
+
+- Levantar DB: `npm run db:up`
+- Generar Prisma client: `npm run prisma:generate`
+- Migrar DB: `npm run prisma:migrate`
+- Seed: `npm run prisma:seed`
+- Frontend: `npm run dev:frontend`
+- Backend: `npm run dev:backend`
+
+### Setup rapido
+
+Si Docker Desktop esta corriendo, podes ejecutar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
 ```
 
-## Personalizacion
+O, si preferis evitar la restriccion de PowerShell con `npm.ps1`:
 
-La mayor parte del contenido editable esta centralizada en `app.js`, dentro del objeto `CLIENTE_DATA`.
+```cmd
+scripts\setup-local.cmd
+```
 
-Desde ahi podes cambiar:
+### Arranque diario
 
-- nombre del local
-- telefono de WhatsApp
-- telefono visible
-- slogan
-- meta description
-- direccion
-- Instagram
-- mensaje de contacto
-- servicios
-- imagenes de cada servicio
-- WhatsApp del desarrollador al pie
+```cmd
+scripts\run-backend.cmd
+scripts\run-frontend.cmd
+```
 
+## Pasos sugeridos
 
-## Estado del proyecto
+1. Abrir Docker Desktop.
+2. Ejecutar `npm run db:up`.
+3. Ejecutar `npm run prisma:generate`.
+4. Ejecutar `npm run prisma:migrate`.
+5. Ejecutar `npm run prisma:seed`.
+6. Levantar backend y frontend.
 
-Actualmente esta preparado como demo comercial funcional:
+## Nota
 
-- diseno terminado
-- contenido de venta trabajado
-- imagenes integradas
-- footer con contacto del desarrollador
-- estructura lista para adaptar a clientes reales
-
-
-## Autor
-
-Desarrollado por CAndy Escudero.
-
-Si queres una landing similar, en esta demo hay un enlace de contacto directo por WhatsApp en el footer.
+El sitio estatico original permanece en la raiz como referencia visual durante la migracion.

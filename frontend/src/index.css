@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-brand-cream font-sans text-brand-ink antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 28%),
+    linear-gradient(180deg, #fffdfb 0%, #fff7f4 100%);
+}
+
+.bg-admin-shell {
+  background-image:
+    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(227, 205, 210, 0.55), transparent 24%),
+    linear-gradient(180deg, #fffdfc 0%, #fff7f4 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.container-shell {
+  @apply mx-auto w-full max-w-7xl px-5 md:px-8;
+}
+
+.admin-shell-container {
+  @apply mx-auto w-full max-w-[1720px] px-4 sm:px-5 lg:px-6 xl:px-8 2xl:px-10;
+}
+
+.section-title {
+  @apply font-display text-4xl font-semibold leading-none text-brand-ink md:text-5xl;
+}
+
+.section-copy {
+  @apply text-base leading-7 text-slate-600 md:text-lg;
+}
+
+.card-surface {
+  @apply rounded-[2rem] border border-rose-100/70 bg-white/90 shadow-soft backdrop-blur;
+}
+
+.field-input {
+  @apply min-h-12 w-full rounded-2xl border border-rose-200 bg-white px-4 text-sm text-brand-ink outline-none transition focus:border-brand-rose focus:ring-2 focus:ring-rose-100;
+}

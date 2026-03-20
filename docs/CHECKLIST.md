@@ -66,9 +66,14 @@
 - [x] Motor de disponibilidad.
 - [x] Reserva de turnos.
 - [x] Configuracion del negocio.
-- [ ] Revisar casos limite de disponibilidad y solapamientos.
+- [x] Validacion automatizada de casos borde de disponibilidad (slot ocupado + bloqueo parcial).
+- [x] Validacion automatizada de reprogramacion (slot ocupado + slot bloqueado + slot valido).
+- [x] Revisar casos limite de disponibilidad y solapamientos.
 - [ ] Agregar tests automatizados de API si queremos mas seguridad antes de seguir escalando.
 - [ ] Definir logging/auditoria basica para operaciones admin.
+- [ ] Preparar modelo de reservas con seña y pago online.
+- [ ] Integrar backend de Mercado Pago para generar pagos y confirmar reservas.
+- [ ] Definir expiracion/liberacion de reservas no abonadas.
 
 ### Frontend publico
 
@@ -78,6 +83,9 @@
 - [ ] Validar UX mobile completa del booking.
 - [ ] Revisar textos finales, estados vacios y mensajes de error.
 - [ ] Decidir si falta migrar mas contenido visual desde la landing original.
+- [ ] Agregar boton `Reservar turno` con cobro del 50% del servicio.
+- [ ] Mostrar resumen economico: total, seña y saldo pendiente.
+- [ ] Resolver retorno de Mercado Pago para pago aprobado, pendiente o rechazado.
 
 ### Panel admin
 
@@ -90,6 +98,7 @@
 - [x] Mejorar metricas reales del dashboard.
 - [x] Agregar filtros mas avanzados para agenda y pacientes.
 - [ ] Definir si hace falta gestion de clientes separada en UI.
+- [ ] Mostrar estado de pago/seña en cada turno.
 
 ### Calidad y cierre tecnico
 
@@ -98,9 +107,45 @@
 - [x] Scripts e2e de servicios/disponibilidad.
 - [x] Scripts e2e de turnos admin.
 - [x] Scripts e2e de business settings.
+- [x] Script tecnico para validar edge cases de disponibilidad (`scripts/test-availability-edge-cases.js`).
+- [x] Script tecnico para validar guardrails de disponibilidad (`scripts/test-availability-guardrails.js`).
+- [x] Script tecnico para validar edge cases de reprogramacion (`scripts/test-reschedule-edge-cases.js`).
 - [x] Reejecutar validaciones end-to-end con el entorno levantado.
 - [ ] Revisar `.gitignore` para no versionar `node_modules`, `dist` y logs.
 - [ ] Committear la nueva base fullstack en bloques ordenados.
+- [ ] Agregar pruebas del flujo de reserva con pago y webhook.
+
+## Implementacion nueva prioritaria: Mercado Pago para confirmar reservas
+
+Objetivo: que la reserva quede confirmada solo si el paciente paga una seña del 50%, evitando perder turnos.
+
+### Alcance funcional
+
+- [ ] Mantener el flujo actual de seleccion de servicio, fecha y horario.
+- [ ] En el ultimo paso mostrar precio total, seña del 50% y saldo restante.
+- [ ] Reemplazar el cierre actual por un boton `Reservar turno`.
+- [ ] Crear una preferencia/link de pago en Mercado Pago por el 50% del servicio.
+- [ ] Confirmar el turno recien cuando Mercado Pago informe pago aprobado.
+- [ ] Si el pago no se aprueba, no bloquear el horario indefinidamente.
+
+### Backend y datos
+
+- [ ] Agregar credenciales y URLs necesarias en `.env`.
+- [ ] Crear modulo de pagos o integracion Mercado Pago.
+- [ ] Recibir y validar webhook/notificacion de pago.
+- [ ] Extender la base para guardar:
+  - precio total
+  - monto de seña
+  - estado de pago
+  - referencia externa de Mercado Pago
+  - vencimiento o timeout de reserva pendiente
+- [ ] Ajustar estados del turno para contemplar reserva pendiente de pago y confirmada por cobro.
+
+### Frontend y operacion
+
+- [ ] Mostrar mensajes claros de reserva confirmada, pendiente o fallida.
+- [ ] Permitir al admin ver si un turno esta pendiente de pago, señado o confirmado.
+- [ ] Definir como se cobra y registra el 50% restante.
 
 ## Orden recomendado para retomar
 
@@ -108,16 +153,18 @@
 2. Reejecutar pruebas e2e clave.
 3. Corregir cualquier regresion encontrada.
 4. Cerrar higiene del repo (`.gitignore`, commits, artefactos generados).
-5. Recién despues seguir con nuevas features.
+5. Implementar reserva con seña del 50% por Mercado Pago.
+6. Recien despues seguir con nuevas features.
 
 ## Siguiente implementacion recomendada
 
-La mejor siguiente inversion es fortalecer la capa de validacion real del producto antes de agregar mas modulos:
+La mejor siguiente inversion es cerrar la reserva confirmada con seña online, pero apoyada sobre la base tecnica que ya validamos:
 
 1. Confirmar flujo completo de reserva y admin con pruebas.
 2. Ajustar casos borde de disponibilidad y reprogramacion.
-3. Cerrar metricas utiles del dashboard.
-4. Evaluar integracion de notificaciones por WhatsApp o email.
+3. Cerrar higiene del repo y dejar la base lista para iterar.
+4. Implementar Mercado Pago para cobrar el 50% al reservar.
+5. Evaluar despues notificaciones por WhatsApp o email.
 
 ## Validaciones sugeridas al volver
 
@@ -140,3 +187,5 @@ La mejor siguiente inversion es fortalecer la capa de validacion real del produc
 - [ ] Revisar que los cambios del admin impacten en el booking publico.
 - [ ] Confirmar persistencia real en base de datos.
 - [ ] Confirmar que el repo quede listo para commit sin basura generada.
+- [ ] Validar reserva con pago aprobado.
+- [ ] Validar que un pago pendiente o rechazado no deje un turno confirmado.

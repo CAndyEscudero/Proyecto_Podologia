@@ -3,13 +3,10 @@ import { SectionHeading } from "../../components/ui/SectionHeading";
 
 export function BookingPage() {
   return (
-    <section className="py-10 md:py-12">
+    <section className="py-6 md:py-8">
       <div className="container-shell">
-        <SectionHeading
-          title="Reserva tu turno online"
-          copy="La interfaz prioriza simplicidad para el paciente y consistencia operativa para la clinica."
-        />
-        <div className="mt-8 md:mt-9">
+        <SectionHeading title="Reserva tu turno online" />
+        <div className="mt-5 md:mt-6">
           <BookingForm />
         </div>
       </div>

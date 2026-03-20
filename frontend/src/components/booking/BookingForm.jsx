@@ -11,8 +11,11 @@ import {
   ChevronRight,
   Clock3,
   LoaderCircle,
+  MapPinned,
+  Search,
   Sparkles,
   Stethoscope,
+  TimerReset,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { createAppointment, getAvailableSlots, getPublicServices } from "../../services/publicApi";
@@ -54,6 +57,8 @@ export function BookingForm() {
   const [slots, setSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
+  const [nextAvailableOption, setNextAvailableOption] = useState(null);
+  const [isSearchingNextDate, setIsSearchingNextDate] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [step, setStep] = useState(1);
 
@@ -133,6 +138,61 @@ export function BookingForm() {
     fetchSlots();
   }, [serviceId, date]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function findNextAvailableDate() {
+      if (!serviceId || !date || isLoadingSlots || slots.length > 0) {
+        setNextAvailableOption(null);
+        setIsSearchingNextDate(false);
+        return;
+      }
+
+      setIsSearchingNextDate(true);
+
+      try {
+        let cursor = dayjs(date).add(1, "day");
+        const maxDate = dayjs(maxBookingDate);
+
+        while (cursor.valueOf() <= maxDate.valueOf()) {
+          const candidateDate = cursor.format("YYYY-MM-DD");
+          const data = await getAvailableSlots(serviceId, candidateDate);
+
+          if (data.slots?.length) {
+            if (!cancelled) {
+              setNextAvailableOption({
+                date: candidateDate,
+                firstSlot: data.slots[0].startTime,
+                slotsCount: data.slots.length,
+              });
+            }
+            return;
+          }
+
+          cursor = cursor.add(1, "day");
+        }
+
+        if (!cancelled) {
+          setNextAvailableOption(null);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setNextAvailableOption(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSearchingNextDate(false);
+        }
+      }
+    }
+
+    findNextAvailableDate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [date, isLoadingSlots, maxBookingDate, serviceId, slots.length]);
+
   const serviceCards = useMemo(
     () =>
       services.map((service) => ({
@@ -201,6 +261,7 @@ export function BookingForm() {
       shouldTouch: true,
       shouldValidate: true,
     });
+    setNextAvailableOption(null);
     setStep(3);
   }
 
@@ -226,6 +287,7 @@ export function BookingForm() {
     setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
     setSlots([]);
     setAvailabilityError("");
+    setNextAvailableOption(null);
     setStep(1);
   }
 
@@ -235,6 +297,7 @@ export function BookingForm() {
       shouldTouch: true,
       shouldValidate: false,
     });
+    setNextAvailableOption(null);
     setStep(2);
   }
 
@@ -242,18 +305,26 @@ export function BookingForm() {
     setStep(3);
   }
 
+  function handleJumpToSuggestedDate() {
+    if (!nextAvailableOption) {
+      return;
+    }
+
+    handleDateChange(nextAvailableOption.date);
+  }
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_360px] lg:items-start xl:grid-cols-[minmax(0,1.08fr)_390px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_360px] lg:items-start xl:grid-cols-[minmax(0,1fr)_384px] xl:gap-6">
       <div className="card-surface overflow-hidden bg-white/92">
-        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-white to-rose-50/70 px-5 py-5 md:px-7 md:py-6">
+        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-white to-rose-50/70 px-4 py-5 md:px-6 md:py-6 xl:px-7">
           <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">
-                Paso {activeStep.id}
-              </p>
-              <h2 className="mt-2 font-display text-[2.7rem] leading-none text-brand-ink md:text-[3.35rem]">
-                Elegi servicio, fecha y horario
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">{activeStep.copy}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">
+              Paso {activeStep.id}
+            </p>
+            <h2 className="mt-2 font-display text-[2.1rem] leading-none text-brand-ink sm:text-[2.45rem] md:text-[3.1rem]">
+              Elegi servicio, fecha y horario
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">{activeStep.copy}</p>
           </div>
 
           <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -269,7 +340,7 @@ export function BookingForm() {
                 <div
                   key={item.id}
                   className={[
-                    "rounded-[1.35rem] border px-4 py-3 transition",
+                    "rounded-[1.2rem] border px-3.5 py-3 transition md:px-4",
                     isActive
                       ? "border-brand-rose bg-rose-50 shadow-soft"
                       : isCompleted
@@ -294,7 +365,7 @@ export function BookingForm() {
                             : "bg-rose-100 text-brand-wine",
                       ].join(" ")}
                     >
-                      {isCompleted ? "✓" : item.id}
+                      {isCompleted ? <CheckCircle2 size={15} /> : item.id}
                     </span>
                   </div>
                 </div>
@@ -303,14 +374,14 @@ export function BookingForm() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-4 md:p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-3.5 md:p-5 xl:p-6">
           <input type="hidden" {...register("serviceId")} />
           <input type="hidden" {...register("date")} />
           <input type="hidden" {...register("startTime")} />
 
-          <div className="rounded-[1.85rem] border border-rose-100/80 bg-gradient-to-b from-white to-rose-50/35">
+          <div className="rounded-[1.6rem] border border-rose-100/80 bg-gradient-to-b from-white to-rose-50/35 md:rounded-[1.85rem]">
             {step === 1 ? (
-              <section data-testid="booking-step-service" className="min-w-full p-4 md:p-5">
+              <section data-testid="booking-step-service" className="min-w-full p-3.5 md:p-5">
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
@@ -339,7 +410,7 @@ export function BookingForm() {
                             data-testid={`booking-service-card-${service.id}`}
                             onClick={() => handleServiceSelect(String(service.id))}
                             className={[
-                              "rounded-[1.7rem] border px-4 py-4 text-left transition md:px-5 md:py-5",
+                              "rounded-[1.45rem] border px-4 py-4 text-left transition md:px-5 md:py-5",
                               isSelected
                                 ? "border-brand-rose bg-gradient-to-br from-[#9e6b78] to-[#ca94a2] text-white shadow-xl shadow-rose-300/35"
                                 : "border-rose-100 bg-white hover:-translate-y-0.5 hover:border-brand-rose hover:shadow-soft",
@@ -417,9 +488,9 @@ export function BookingForm() {
             ) : null}
 
             {step === 2 ? (
-              <section data-testid="booking-step-date" className="min-w-full p-4 md:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <div>
+              <section data-testid="booking-step-date" className="min-w-full p-3.5 md:p-5">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3 md:items-center">
+                  <div className="max-w-2xl">
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
                       Paso 2
                     </p>
@@ -445,7 +516,7 @@ export function BookingForm() {
             ) : null}
 
             {step === 3 ? (
-              <section data-testid="booking-step-time" className="min-w-full p-4 md:p-5">
+              <section data-testid="booking-step-time" className="min-w-full p-3.5 md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
@@ -462,7 +533,7 @@ export function BookingForm() {
                 </div>
 
                 <Field label="" error={errors.startTime?.message || availabilityError}>
-                  <div className="rounded-[1.45rem] border border-rose-200/80 bg-white p-4 md:p-5">
+                  <div className="rounded-[1.35rem] border border-rose-200/80 bg-white p-3.5 md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2 text-sm font-semibold text-brand-ink">
                         <Clock3 size={16} className="text-brand-wine" />
@@ -512,8 +583,47 @@ export function BookingForm() {
                         })}
                       </div>
                     ) : date && !isLoadingSlots ? (
-                      <div className="mt-4 rounded-[1.2rem] border border-dashed border-rose-200 bg-rose-50/45 px-4 py-6 text-sm text-slate-500">
-                        No hay horarios disponibles para este dia. Probá otra fecha desde el boton "Cambiar dia".
+                      <div className="mt-4 space-y-3 rounded-[1.2rem] border border-dashed border-rose-200 bg-rose-50/45 px-4 py-5 text-sm text-slate-500">
+                        <div className="flex items-start gap-3">
+                          <Search size={16} className="mt-0.5 shrink-0 text-brand-wine" />
+                          <div>
+                            <p className="font-semibold text-brand-ink">No hay horarios disponibles para este dia.</p>
+                            <p className="mt-1 leading-6">
+                              Proba otra fecha o usa la sugerencia automatica si queres saltar al proximo hueco disponible.
+                            </p>
+                          </div>
+                        </div>
+
+                        {isSearchingNextDate ? (
+                          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-500">
+                            <LoaderCircle size={14} className="animate-spin" />
+                            Buscando proxima fecha disponible
+                          </div>
+                        ) : nextAvailableOption ? (
+                          <div className="rounded-[1rem] border border-rose-200 bg-white px-4 py-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="space-y-1">
+                                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                                  Sugerencia automatica
+                                </p>
+                                <p className="text-sm font-semibold text-brand-ink">
+                                  {dayjs(nextAvailableOption.date).format("dddd DD/MM/YYYY")}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Primer horario: {nextAvailableOption.firstSlot} - {nextAvailableOption.slotsCount} opciones
+                                </p>
+                              </div>
+                              <Button type="button" className="min-h-10 px-4 text-xs" onClick={handleJumpToSuggestedDate}>
+                                Ir a esa fecha
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-500">
+                            <TimerReset size={14} className="text-brand-wine" />
+                            No encontramos otra fecha con turnos dentro de la ventana actual.
+                          </div>
+                        )}
                       </div>
                     ) : null}
                   </div>
@@ -522,7 +632,7 @@ export function BookingForm() {
             ) : null}
 
             {step === 4 ? (
-              <section data-testid="booking-step-client" className="min-w-full p-4 md:p-5">
+              <section data-testid="booking-step-client" className="min-w-full p-3.5 md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
@@ -580,7 +690,7 @@ export function BookingForm() {
         </form>
       </div>
 
-      <aside className="space-y-5 lg:sticky lg:top-24">
+      <aside className="order-first space-y-4 lg:order-none lg:space-y-5 lg:sticky lg:top-24 lg:self-start">
         <div className="card-surface p-6 md:p-7">
           <div className="flex items-center gap-2 text-brand-wine">
             <CalendarDays size={20} />
@@ -648,7 +758,12 @@ export function BookingForm() {
               </div>
 
               <div className="rounded-[1.25rem] border border-dashed border-rose-200 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-500">
-                El resumen se comporta como un panel de seguimiento del turno: ves el servicio elegido, el dia, el horario y lo que falta completar en cada paso.
+                <div className="flex items-start gap-2">
+                  <MapPinned size={14} className="mt-0.5 shrink-0 text-brand-wine" />
+                  <p>
+                    El resumen actua como panel inteligente del turno: te muestra lo elegido, lo pendiente y te ayuda a detectar rapido si necesitas volver un paso atras.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -660,11 +775,11 @@ export function BookingForm() {
 
 function Field({ label, error, children }) {
   return (
-    <label className="block">
+    <div className="block">
       {label ? <span className="mb-2 block text-sm font-semibold text-brand-ink">{label}</span> : null}
       {children}
       {error ? <span className="mt-2 block text-xs font-medium text-red-500">{error}</span> : null}
-    </label>
+    </div>
   );
 }
 

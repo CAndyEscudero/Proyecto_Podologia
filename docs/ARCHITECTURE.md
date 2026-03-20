@@ -104,6 +104,11 @@ Entidades principales:
 - `blocked_dates`
 - `business_settings`
 
+Diagrama recomendado:
+
+- Exportar el modelo desde `drawdb.app` como PNG y guardarlo en `docs/diagrams/db-diagram.png`.
+- Referencia de carpeta: [docs/diagrams/README.md](/c:/Users/Emula/Desktop/proyecto%20podologia/docs/diagrams/README.md)
+
 ## 5. Endpoints REST propuestos
 
 ### Auth

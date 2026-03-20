@@ -7,21 +7,35 @@ const DASHBOARD_READY_TEXTS = ["Panel administrativo", "Centro de control"];
 const ADMIN_EMAIL = requireLocalEnv("ADMIN_EMAIL");
 const ADMIN_PASSWORD = requireLocalEnv("ADMIN_PASSWORD");
 
-async function getDashboardScenario() {
-  const loginResponse = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    }),
-  });
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!loginResponse.ok) {
-    throw new Error(`No se pudo autenticar para preparar el escenario (${loginResponse.status})`);
+async function authenticateAdmin() {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const loginResponse = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+      }),
+    });
+
+    if (loginResponse.ok) {
+      const { token } = await loginResponse.json();
+      return token;
+    }
+
+    if (loginResponse.status !== 429 || attempt === 3) {
+      throw new Error(`No se pudo autenticar para preparar el escenario (${loginResponse.status})`);
+    }
+
+    await delay(1200 * attempt);
   }
+}
 
-  const { token } = await loginResponse.json();
+async function getDashboardScenario(token) {
   const appointmentsResponse = await fetch(
     `${API_URL}/appointments?dateFrom=${new Date().toISOString().slice(0, 10)}&dateTo=2026-04-15`,
     {
@@ -61,19 +75,18 @@ async function run() {
   };
 
   try {
-    const scenario = await getDashboardScenario();
+    const token = await authenticateAdmin();
+    const scenario = await getDashboardScenario(token);
 
-    await page.goto(`${BASE_URL}/admin/login`, { waitUntil: "networkidle", timeout: 30000 });
+    await page.addInitScript((value) => {
+      window.localStorage.setItem("podologia_admin_token", value);
+    }, token);
 
-    await page.locator('input[type="email"]').fill(ADMIN_EMAIL);
-    await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: /Ingresar/i }).click();
-
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
+    await page.goto(`${BASE_URL}/admin/dashboard`, { waitUntil: "networkidle", timeout: 30000 });
     result.loggedIn = true;
 
     await Promise.any(
-      DASHBOARD_READY_TEXTS.map((text) =>
+      [...DASHBOARD_READY_TEXTS, "Turnos filtrados", "Alta manual de turnos"].map((text) =>
         page.waitForSelector(`text=${text}`, { timeout: 15000 })
       )
     );

@@ -109,6 +109,10 @@ Diagrama recomendado:
 - Exportar el modelo desde `drawdb.app` como PNG y guardarlo en `docs/diagrams/db-diagram.png`.
 - Referencia de carpeta: [docs/diagrams/README.md](/c:/Users/Emula/Desktop/proyecto%20podologia/docs/diagrams/README.md)
 
+Vista embebida:
+
+![Diagrama de base de datos](./diagrams/db-diagram.png)
+
 ## 5. Endpoints REST propuestos
 
 ### Auth

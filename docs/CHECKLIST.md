@@ -6,6 +6,7 @@
 - La nueva app fullstack vive en `frontend/` y `backend/`.
 - El backend ya tiene modulos para auth, servicios, disponibilidad, turnos, clientes, usuarios y configuracion del negocio.
 - El frontend ya tiene sitio publico, flujo de reservas, login admin y dashboard operativo.
+- El frontend ya quedo migrado a TypeScript y con Tailwind ordenado como nueva base.
 - Hay scripts de setup local, arranque y pruebas e2e en `scripts/`.
 - Gran parte de esta migracion aun no esta committeada en Git.
 
@@ -28,6 +29,8 @@
   - use `BASE_URL` y `API_URL` configurables
   - descubra por API una combinacion realmente reservable
   - use selectores estables en la UI del booking
+- Cerramos la migracion del frontend a TypeScript y validamos build + admin + booking.
+- Redisenamos visualmente el panel admin para que se vea mas SaaS, limpio y operativo.
 
 ## Ultima validacion ejecutada
 
@@ -48,15 +51,22 @@
   - resumen superior con metricas reales del conjunto filtrado
   - dashboard e2e adaptado al flujo nuevo
   - booking e2e de regresion despues de cambios admin
+- Revalidacion parcial de entorno: `2026-03-21`
+  - Docker Desktop activo: OK
+  - `mysql` y `adminer` arriba por `docker compose`: OK
+  - `frontend/.env` y `backend/.env` presentes: OK
+  - `prisma migrate`: OK, schema en sync
+  - `prisma generate`: bloqueado por lock local de Windows sobre `query_engine-windows.dll.node` (`EPERM`)
+  - backend respondiendo en `:4000`: OK
 
 ## Checklist de continuidad
 
 ### Infra y entorno
 
-- [ ] Confirmar que Docker Desktop este corriendo.
-- [ ] Levantar MySQL y Adminer con `npm run db:up`.
+- [x] Confirmar que Docker Desktop este corriendo.
+- [x] Levantar MySQL y Adminer con `npm run db:up`.
 - [ ] Verificar que Prisma genere cliente y migre sin errores.
-- [ ] Confirmar que `frontend/.env` y `backend/.env` sigan correctos.
+- [x] Confirmar que `frontend/.env` y `backend/.env` sigan correctos.
 - [ ] Limpiar logs viejos si molestan la lectura (`frontend.log`, `backend.log`).
 
 ### Backend
@@ -80,6 +90,8 @@
 - [x] Home publica.
 - [x] Ruta `/reservas`.
 - [x] Flujo base de reserva online.
+- [x] Migracion del frontend a TypeScript.
+- [x] Orden de Tailwind y estilos globales.
 - [ ] Validar UX mobile completa del booking.
 - [ ] Revisar textos finales, estados vacios y mensajes de error.
 - [ ] Decidir si falta migrar mas contenido visual desde la landing original.
@@ -102,6 +114,7 @@
 
 ### Calidad y cierre tecnico
 
+- [x] Frontend compilando con TypeScript.
 - [x] Scripts e2e de booking.
 - [x] Scripts e2e de dashboard admin.
 - [x] Scripts e2e de servicios/disponibilidad.
@@ -111,7 +124,7 @@
 - [x] Script tecnico para validar guardrails de disponibilidad (`scripts/test-availability-guardrails.js`).
 - [x] Script tecnico para validar edge cases de reprogramacion (`scripts/test-reschedule-edge-cases.js`).
 - [x] Reejecutar validaciones end-to-end con el entorno levantado.
-- [ ] Revisar `.gitignore` para no versionar `node_modules`, `dist` y logs.
+- [x] Revisar `.gitignore` para no versionar `node_modules`, `dist` y logs.
 - [ ] Committear la nueva base fullstack en bloques ordenados.
 - [ ] Agregar pruebas del flujo de reserva con pago y webhook.
 

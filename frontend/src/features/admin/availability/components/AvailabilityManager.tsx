@@ -148,8 +148,8 @@ export function AvailabilityManager({
           </p>
         </div>
 
-        <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-3">
+        <div className="grid gap-6 p-6 min-[1400px]:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-3">
             {rules.length === 0 ? (
               <div className="rounded-[1.5rem] border border-rose-100 px-5 py-8 text-sm text-slate-500">
                 No hay reglas cargadas.
@@ -196,7 +196,7 @@ export function AvailabilityManager({
             )}
           </div>
 
-          <div className="rounded-[1.75rem] border border-rose-100 bg-rose-50/40 p-5">
+          <div className="min-w-0 rounded-[1.75rem] border border-rose-100 bg-rose-50/40 p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.22em] text-brand-wine">

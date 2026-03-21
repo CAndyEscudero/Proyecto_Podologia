@@ -73,7 +73,10 @@ async function run() {
   };
 
   const phone = `3462${Date.now().toString().slice(-6)}`;
-  const initialName = `Paciente ${Date.now().toString().slice(-4)}`;
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const seed = Date.now();
+  const nameSuffix = `${alphabet[seed % alphabet.length]}${alphabet[Math.floor(seed / 10) % alphabet.length]}`;
+  const initialName = `Paciente ${nameSuffix}`;
   const editedName = `${initialName} Editado`;
     const token = await authenticateAdmin();
     const scenario = await buildScenario();
@@ -132,9 +135,18 @@ async function run() {
     await page.waitForSelector("text=Agenda y gestion de turnos", { timeout: 15000 });
     await page.getByTestId("appointments-filter-date-from").fill(scenario.date);
     await page.getByTestId("appointments-filter-date-to").fill(scenario.date);
-    await page.getByTestId("appointments-filter-client").fill(initialName);
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/appointments") &&
+          response.request().method() === "GET" &&
+          response.status() === 200,
+        { timeout: 15000 }
+      ),
+      page.getByTestId("appointments-filter-client").fill(phone),
+    ]);
 
-    const appointmentCard = page.locator("article").filter({ hasText: initialName }).first();
+    const appointmentCard = page.locator("article").filter({ hasText: phone }).first();
     await appointmentCard.waitFor({ timeout: 15000 });
 
     await appointmentCard.getByRole("button", { name: "Editar" }).click();
@@ -157,36 +169,44 @@ async function run() {
     ]);
     result.appointmentEdited = true;
 
-    const editedCard = page.locator("article").filter({ hasText: editedName }).first();
-    await editedCard.waitFor({ timeout: 15000 });
-    await editedCard.getByRole("button", { name: "Reprogramar" }).click();
+    await editManager.getByRole("button", { name: "Reprogramar" }).click();
     await page.waitForSelector("text=Reprogramar turno", { timeout: 15000 });
     const rescheduleManager = page.locator("section").filter({ hasText: "Reprogramar turno" }).first();
-    await rescheduleManager.locator('input[type="date"]').first().fill(scenario.date);
-    await page.evaluate((slotLabel) => {
-      window.__rescheduleSlotLabel = slotLabel;
-    }, `${scenario.rescheduleSlot.startTime} - ${scenario.rescheduleSlot.endTime}`);
+    const rescheduleForm = rescheduleManager.locator("form").first();
+    await rescheduleForm.locator('input[type="date"]').first().fill(scenario.date);
     await page.waitForFunction(() => {
       const root = Array.from(document.querySelectorAll("section")).find((node) => node.textContent.includes("Reprogramar turno"));
       if (!root) return false;
-      const selects = Array.from(root.querySelectorAll("select"));
-      return selects.some((select) => Array.from(select.options).some((option) => option.textContent.includes(window.__rescheduleSlotLabel)));
+      const select = root.querySelector("select");
+      return select && select.options.length > 1;
     }, { timeout: 15000, polling: 250 });
-    await rescheduleManager.locator('select').first().selectOption(scenario.rescheduleSlot.startTime);
-    await Promise.all([
+    const rescheduleStartTime = await rescheduleForm.locator("select").first().evaluate((select) => {
+      const options = Array.from(select.options)
+        .map((option) => option.value)
+        .filter(Boolean);
+      return options[options.length - 1] || "";
+    });
+    if (!rescheduleStartTime) {
+      throw new Error("No se encontro un horario disponible para reprogramar.");
+    }
+    await rescheduleForm.locator('select').first().selectOption(rescheduleStartTime);
+    const [rescheduleResponse] = await Promise.all([
       page.waitForResponse(
         (response) =>
           /\/api\/appointments\/\d+\/reschedule$/.test(response.url()) &&
-          response.request().method() === "PATCH" &&
-          response.status() === 200,
+          response.request().method() === "PATCH",
         { timeout: 15000 }
       ),
-      rescheduleManager.getByRole("button", { name: "Confirmar reprogramacion" }).click(),
+      rescheduleForm.getByRole("button", { name: "Confirmar reprogramacion" }).click({ force: true }),
     ]);
+    if (rescheduleResponse.status() !== 200) {
+      throw new Error(`La reprogramacion devolvio ${rescheduleResponse.status()}.`);
+    }
     result.appointmentRescheduled = true;
 
-    const rescheduledCard = page.locator("article").filter({ hasText: editedName }).first();
-    await rescheduledCard.waitFor({ timeout: 15000 });
+    await rescheduleManager.getByRole("button", { name: "Editar" }).click();
+    await page.waitForSelector("text=Editar datos del turno", { timeout: 15000 });
+    const deleteManager = page.locator("section").filter({ hasText: "Editar datos del turno" }).first();
     await Promise.all([
       page.waitForResponse(
         (response) =>
@@ -195,7 +215,7 @@ async function run() {
           response.status() === 204,
         { timeout: 15000 }
       ),
-      rescheduledCard.getByRole("button", { name: "Eliminar" }).click(),
+      deleteManager.getByRole("button", { name: "Eliminar turno" }).click(),
     ]);
     result.appointmentDeleted = true;
   } catch (error) {

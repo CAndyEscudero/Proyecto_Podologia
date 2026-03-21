@@ -45,7 +45,7 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ### Bootstrap minimo
 
 - [x] Migrar `frontend/src/main.jsx` a `frontend/src/main.tsx`.
-- [ ] Confirmar que Vite sigue levantando.
+- [x] Confirmar que Vite sigue levantando.
 - [x] Confirmar que el build sigue pasando.
 
 ### Validacion de cierre
@@ -273,8 +273,8 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ### Validacion de cierre
 
 - [x] `npm --prefix frontend run build`
-- [ ] Verificar flujo completo de reserva.
-- [ ] Verificar servicio -> fecha -> horario -> datos.
+- [x] Verificar flujo completo de reserva.
+- [x] Verificar servicio -> fecha -> horario -> datos.
 - [ ] Verificar errores de disponibilidad.
 - [ ] Verificar sugerencia de próxima fecha.
 
@@ -300,10 +300,10 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ### Validacion de cierre
 
 - [x] `npm --prefix frontend run build`
-- [ ] Verificar gestión de servicios.
-- [ ] Verificar gestión de reglas.
-- [ ] Verificar bloqueos.
-- [ ] Verificar configuración del negocio.
+- [x] Verificar gestión de servicios.
+- [x] Verificar gestión de reglas.
+- [x] Verificar bloqueos.
+- [x] Verificar configuración del negocio.
 
 ## Etapa 10 - Admin complejo
 
@@ -326,13 +326,13 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ### Validacion de cierre
 
 - [x] `npm --prefix frontend run build`
-- [ ] Verificar login admin.
-- [ ] Verificar dashboard.
-- [ ] Verificar alta manual de turno.
-- [ ] Verificar edición.
-- [ ] Verificar reprogramación.
-- [ ] Verificar eliminación.
-- [ ] Verificar filtros por rango, estado, servicio y cliente.
+- [x] Verificar login admin.
+- [x] Verificar dashboard.
+- [x] Verificar alta manual de turno.
+- [x] Verificar edición.
+- [x] Verificar reprogramación.
+- [x] Verificar eliminación.
+- [x] Verificar filtros por rango, estado, servicio y cliente.
 
 ## Etapa 11 - Limpieza final
 
@@ -353,9 +353,9 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ### Validacion final
 
 - [x] `npm --prefix frontend run build`
-- [ ] Levantar la app y hacer smoke test general.
-- [ ] Confirmar que booking funciona.
-- [ ] Confirmar que admin funciona.
+- [x] Levantar la app y hacer smoke test general.
+- [x] Confirmar que booking funciona.
+- [x] Confirmar que admin funciona.
 - [x] Confirmar que Tailwind quedó ordenado en `styles/`.
 
 ## Checklist de verificacion rapida por cada PR o bloque

@@ -1,5 +1,5 @@
-import { faqs } from "../../data/homeContent";
-import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
+import { faqs } from "../data/home-content";
+import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
 
 export function FaqSection() {
   return (

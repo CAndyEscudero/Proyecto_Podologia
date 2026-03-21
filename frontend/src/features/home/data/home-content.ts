@@ -6,8 +6,16 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import type {
+  AdminHighlight,
+  HomeBenefit,
+  HomeFaq,
+  HomeServiceCard,
+  HomeTestimonial,
+  TrustPillar,
+} from "../types/home.types";
 
-export const services = [
+export const services: HomeServiceCard[] = [
   {
     id: 1,
     name: "Podologia clinica",
@@ -46,7 +54,7 @@ export const services = [
   },
 ];
 
-export const benefits = [
+export const benefits: HomeBenefit[] = [
   {
     title: "Experiencia profesional",
     copy: "Cada atencion parte de criterio tecnico, escucha y personalizacion del tratamiento.",
@@ -69,7 +77,7 @@ export const benefits = [
   },
 ];
 
-export const testimonials = [
+export const testimonials: HomeTestimonial[] = [
   {
     author: "Mariana G.",
     quote: "Me senti super comoda desde el primer momento. La atencion fue profesional y muy cuidada.",
@@ -84,7 +92,7 @@ export const testimonials = [
   },
 ];
 
-export const faqs = [
+export const faqs: HomeFaq[] = [
   {
     question: "Necesito turno previo?",
     answer: "Si. La agenda funciona con turnos para brindar puntualidad y una atencion realmente personalizada.",
@@ -103,14 +111,14 @@ export const faqs = [
   },
 ];
 
-export const adminHighlights = [
+export const adminHighlights: AdminHighlight[] = [
   { label: "Turnos de hoy", value: "12" },
   { label: "Pendientes", value: "04" },
   { label: "Confirmados", value: "06" },
   { label: "Clientes nuevos", value: "03" },
 ];
 
-export const trustPillars = [
+export const trustPillars: TrustPillar[] = [
   { title: "Profesionalismo", icon: BadgeCheck },
   { title: "Bienestar", icon: Sparkles },
   { title: "Reserva simple", icon: CalendarClock },

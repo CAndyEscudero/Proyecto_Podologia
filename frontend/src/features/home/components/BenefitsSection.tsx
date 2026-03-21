@@ -1,5 +1,5 @@
-import { benefits } from "../../data/homeContent";
-import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
+import { benefits } from "../data/home-content";
+import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
 
 export function BenefitsSection() {
   return (

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { type SubmitHandler, useForm } from "react-hook-form";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,9 +18,19 @@ import {
   TimerReset,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { createAppointment, getAvailableSlots, getPublicServices } from "../../services/publicApi";
-import { Button } from "../../shared/ui/button/Button";
+import { Button } from "../../../shared/ui/button/Button";
+import type { ApiErrorResponse, CreateAppointmentResponse } from "../../../shared/types/api";
+import type { Service } from "../../../shared/types/domain";
+import { createAppointment } from "../api/booking.api";
 import { BookingCalendar } from "./BookingCalendar";
+import { useBookingAvailability } from "../hooks/useBookingAvailability";
+import { formatBookingPrice } from "../utils/booking-formatters";
+import type {
+  BookingFieldProps,
+  BookingFormValues,
+  BookingStep,
+  BookingSummaryRowProps,
+} from "../types/booking.types";
 
 const today = dayjs().format("YYYY-MM-DD");
 const maxBookingDate = dayjs().add(45, "day").format("YYYY-MM-DD");
@@ -43,24 +53,21 @@ const bookingSchema = z.object({
   notes: z.string().trim().max(1000, "Las observaciones son demasiado largas").optional(),
 });
 
-const steps = [
+const steps: BookingStep[] = [
   { id: 1, label: "Servicio", copy: "Elegi el tratamiento que queres reservar." },
   { id: 2, label: "Dia", copy: "Busca la fecha que mejor se adapte a tu agenda." },
   { id: 3, label: "Horario", copy: "Selecciona un horario disponible real." },
   { id: 4, label: "Tus datos", copy: "Completa tus datos para confirmar la solicitud." },
 ];
 
+function getApiMessage(error: unknown, fallbackMessage: string): string {
+  const maybeError = error as { response?: { data?: ApiErrorResponse } };
+  return maybeError?.response?.data?.message || fallbackMessage;
+}
+
 export function BookingForm() {
-  const [services, setServices] = useState([]);
-  const [servicesError, setServicesError] = useState("");
-  const [isLoadingServices, setIsLoadingServices] = useState(true);
-  const [slots, setSlots] = useState([]);
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState("");
-  const [nextAvailableOption, setNextAvailableOption] = useState(null);
-  const [isSearchingNextDate, setIsSearchingNextDate] = useState(false);
-  const [confirmation, setConfirmation] = useState(null);
-  const [step, setStep] = useState(1);
+  const [confirmation, setConfirmation] = useState<CreateAppointmentResponse | null>(null);
+  const [step, setStep] = useState<BookingStep["id"]>(1);
 
   const {
     register,
@@ -69,7 +76,7 @@ export function BookingForm() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       serviceId: "",
@@ -87,122 +94,36 @@ export function BookingForm() {
   const date = watch("date");
   const startTime = watch("startTime");
 
-  const selectedService = services.find((service) => String(service.id) === serviceId);
+  const {
+    services,
+    servicesError,
+    isLoadingServices,
+    slots,
+    isLoadingSlots,
+    availabilityError,
+    nextAvailableOption,
+    isSearchingNextDate,
+    clearSuggestions,
+  } = useBookingAvailability({
+    serviceId,
+    date,
+    maxBookingDate,
+  });
+
+  const selectedService = services.find((service: Service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
   const activeStep = steps.find((item) => item.id === step) || steps[0];
-
-  useEffect(() => {
-    async function fetchServices() {
-      try {
-        setIsLoadingServices(true);
-        setServicesError("");
-        const data = await getPublicServices();
-        setServices(data);
-      } catch (error) {
-        setServices([]);
-        setServicesError("No se pudieron cargar los servicios");
-        toast.error(error?.response?.data?.message || "No se pudieron cargar los servicios");
-      } finally {
-        setIsLoadingServices(false);
-      }
-    }
-
-    fetchServices();
-  }, []);
-
-  useEffect(() => {
-    async function fetchSlots() {
-      if (!serviceId || !date) {
-        setSlots([]);
-        setAvailabilityError("");
-        return;
-      }
-
-      try {
-        setIsLoadingSlots(true);
-        setAvailabilityError("");
-        const data = await getAvailableSlots(serviceId, date);
-        setSlots(data.slots || []);
-
-        if (!data.slots?.length) {
-          setAvailabilityError("No hay horarios disponibles para esa fecha");
-        }
-      } catch (error) {
-        setSlots([]);
-        setAvailabilityError(error?.response?.data?.message || "No se pudo cargar la disponibilidad");
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    }
-
-    fetchSlots();
-  }, [serviceId, date]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function findNextAvailableDate() {
-      if (!serviceId || !date || isLoadingSlots || slots.length > 0) {
-        setNextAvailableOption(null);
-        setIsSearchingNextDate(false);
-        return;
-      }
-
-      setIsSearchingNextDate(true);
-
-      try {
-        let cursor = dayjs(date).add(1, "day");
-        const maxDate = dayjs(maxBookingDate);
-
-        while (cursor.valueOf() <= maxDate.valueOf()) {
-          const candidateDate = cursor.format("YYYY-MM-DD");
-          const data = await getAvailableSlots(serviceId, candidateDate);
-
-          if (data.slots?.length) {
-            if (!cancelled) {
-              setNextAvailableOption({
-                date: candidateDate,
-                firstSlot: data.slots[0].startTime,
-                slotsCount: data.slots.length,
-              });
-            }
-            return;
-          }
-
-          cursor = cursor.add(1, "day");
-        }
-
-        if (!cancelled) {
-          setNextAvailableOption(null);
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setNextAvailableOption(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsSearchingNextDate(false);
-        }
-      }
-    }
-
-    findNextAvailableDate();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [date, isLoadingSlots, maxBookingDate, serviceId, slots.length]);
 
   const serviceCards = useMemo(
     () =>
       services.map((service) => ({
         ...service,
-        priceLabel: formatPrice(service.priceCents),
+        priceLabel: formatBookingPrice(service.priceCents),
       })),
     [services]
   );
 
-  async function onSubmit(values) {
+  const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
       const response = await createAppointment({
         serviceId: Number(values.serviceId),
@@ -229,15 +150,14 @@ export function BookingForm() {
         email: "",
         notes: "",
       });
-      setSlots([]);
-      setAvailabilityError("");
+      clearSuggestions();
       setStep(1);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No fue posible reservar el turno");
+      toast.error(getApiMessage(error, "No fue posible reservar el turno"));
     }
-  }
+  };
 
-  function handleServiceSelect(nextValue) {
+  function handleServiceSelect(nextValue: string): void {
     setValue("serviceId", nextValue, {
       shouldDirty: true,
       shouldTouch: true,
@@ -245,12 +165,10 @@ export function BookingForm() {
     });
     setValue("date", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
     setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
-    setSlots([]);
-    setAvailabilityError("");
     setStep(2);
   }
 
-  function handleDateChange(nextDate) {
+  function handleDateChange(nextDate: string): void {
     setValue("date", nextDate, {
       shouldDirty: true,
       shouldTouch: true,
@@ -261,11 +179,11 @@ export function BookingForm() {
       shouldTouch: true,
       shouldValidate: true,
     });
-    setNextAvailableOption(null);
+    clearSuggestions();
     setStep(3);
   }
 
-  function handleSlotChange(nextStartTime) {
+  function handleSlotChange(nextStartTime: string): void {
     setValue("startTime", nextStartTime, {
       shouldDirty: true,
       shouldTouch: true,
@@ -274,38 +192,35 @@ export function BookingForm() {
     setStep(4);
   }
 
-  function handleResetFlow() {
+  function handleResetFlow(): void {
     reset();
     setConfirmation(null);
-    setSlots([]);
-    setAvailabilityError("");
+    clearSuggestions();
     setStep(1);
   }
 
-  function handleBackToServices() {
+  function handleBackToServices(): void {
     setValue("date", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
     setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
-    setSlots([]);
-    setAvailabilityError("");
-    setNextAvailableOption(null);
+    clearSuggestions();
     setStep(1);
   }
 
-  function handleBackToDateStep() {
+  function handleBackToDateStep(): void {
     setValue("startTime", "", {
       shouldDirty: true,
       shouldTouch: true,
       shouldValidate: false,
     });
-    setNextAvailableOption(null);
+    clearSuggestions();
     setStep(2);
   }
 
-  function handleBackToTimeStep() {
+  function handleBackToTimeStep(): void {
     setStep(3);
   }
 
-  function handleJumpToSuggestedDate() {
+  function handleJumpToSuggestedDate(): void {
     if (!nextAvailableOption) {
       return;
     }
@@ -669,7 +584,7 @@ export function BookingForm() {
                     <Field label="Observaciones">
                       <textarea
                         data-testid="booking-notes"
-                        rows="4"
+                        rows={4}
                         {...register("notes")}
                         className="field-input min-h-[110px] resize-none py-3"
                         placeholder="Contanos si hay alguna molestia, antecedente o comentario util para la atencion."
@@ -736,7 +651,7 @@ export function BookingForm() {
                         {selectedService.durationMin} min
                       </span>
                       <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-bold">
-                        {formatPrice(selectedService.priceCents)}
+                        {formatBookingPrice(selectedService.priceCents)}
                       </span>
                     </div>
                   </div>
@@ -773,7 +688,7 @@ export function BookingForm() {
   );
 }
 
-function Field({ label, error, children }) {
+function Field({ label, error, children }: BookingFieldProps) {
   return (
     <div className="block">
       {label ? <span className="mb-2 block text-sm font-semibold text-brand-ink">{label}</span> : null}
@@ -783,25 +698,11 @@ function Field({ label, error, children }) {
   );
 }
 
-function SummaryRow({ label, value }) {
+function SummaryRow({ label, value }: BookingSummaryRowProps) {
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="font-semibold text-brand-ink">{label}:</span>
       <span className="text-right text-slate-600">{value}</span>
     </div>
   );
-}
-
-function formatPrice(priceCents) {
-  if (!priceCents) {
-    return "Consultar";
-  }
-
-  const formatter = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
-
-  return formatter.format(priceCents);
 }

@@ -1,4 +1,4 @@
-import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
+import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
 
 export function AboutSection() {
   return (

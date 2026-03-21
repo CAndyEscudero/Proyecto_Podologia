@@ -229,26 +229,26 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Tipos y data
 
-- [ ] Crear `frontend/src/features/home/types/home.types.ts`.
-- [ ] Migrar `frontend/src/data/homeContent.js` a `frontend/src/features/home/data/home-content.ts`.
+- [x] Crear `frontend/src/features/home/types/home.types.ts`.
+- [x] Migrar `frontend/src/data/homeContent.js` a `frontend/src/features/home/data/home-content.ts`.
 
 ### Componentes
 
-- [ ] Migrar `AboutSection`.
-- [ ] Migrar `BenefitsSection`.
-- [ ] Migrar `ContactSection`.
-- [ ] Migrar `FaqSection`.
-- [ ] Migrar `HeroSection`.
-- [ ] Migrar `ServicesSection`.
-- [ ] Migrar `TestimonialsSection`.
+- [x] Migrar `AboutSection`.
+- [x] Migrar `BenefitsSection`.
+- [x] Migrar `ContactSection`.
+- [x] Migrar `FaqSection`.
+- [x] Migrar `HeroSection`.
+- [x] Migrar `ServicesSection`.
+- [x] Migrar `TestimonialsSection`.
 
 ### Pantalla
 
-- [ ] Migrar `frontend/src/pages/public/HomePage.jsx` a `.tsx`.
+- [x] Migrar `frontend/src/pages/public/HomePage.jsx` a `.tsx`.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Revisar home completa en desktop.
 - [ ] Revisar home completa en mobile.
 
@@ -256,23 +256,23 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Tipos y helpers
 
-- [ ] Crear `frontend/src/features/booking/types/booking.types.ts`.
-- [ ] Crear `frontend/src/features/booking/utils/booking-formatters.ts` si hace falta.
-- [ ] Crear `frontend/src/features/booking/hooks/useBookingAvailability.ts` si conviene extraer lógica.
+- [x] Crear `frontend/src/features/booking/types/booking.types.ts`.
+- [x] Crear `frontend/src/features/booking/utils/booking-formatters.ts` si hace falta.
+- [x] Crear `frontend/src/features/booking/hooks/useBookingAvailability.ts` si conviene extraer lógica.
 
 ### Componentes
 
-- [ ] Migrar `BookingCalendar.jsx` a `.tsx`.
-- [ ] Migrar `BookingForm.jsx` a `.tsx`.
-- [ ] Tipar estados, props y respuestas API del flujo.
+- [x] Migrar `BookingCalendar.jsx` a `.tsx`.
+- [x] Migrar `BookingForm.jsx` a `.tsx`.
+- [x] Tipar estados, props y respuestas API del flujo.
 
 ### Pantalla
 
-- [ ] Migrar `frontend/src/pages/public/BookingPage.jsx` a `.tsx`.
+- [x] Migrar `frontend/src/pages/public/BookingPage.jsx` a `.tsx`.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Verificar flujo completo de reserva.
 - [ ] Verificar servicio -> fecha -> horario -> datos.
 - [ ] Verificar errores de disponibilidad.

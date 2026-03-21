@@ -1,4 +1,4 @@
-import { BookingForm } from "../../components/booking/BookingForm";
+import { BookingForm } from "../../features/booking/components/BookingForm";
 import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
 
 export function BookingPage() {

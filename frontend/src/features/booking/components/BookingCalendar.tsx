@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import type { Dayjs } from "dayjs";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { BookingCalendarProps } from "../types/booking.types";
 
 const WEEK_DAYS = ["L", "M", "M", "J", "V", "S", "D"];
 const MONTH_NAMES = [
@@ -19,10 +22,10 @@ const MONTH_NAMES = [
   "Diciembre",
 ];
 
-export function BookingCalendar({ value, onChange, minDate, maxDate }) {
+export function BookingCalendar({ value, onChange, minDate, maxDate }: BookingCalendarProps) {
   const min = dayjs(minDate).startOf("day");
   const max = dayjs(maxDate).startOf("day");
-  const selectedDate = value ? dayjs(value) : null;
+  const selectedDate: Dayjs | null = value ? dayjs(value) : null;
   const initialMonth = selectedDate?.isValid() ? selectedDate.startOf("month") : min.startOf("month");
   const [viewMonth, setViewMonth] = useState(initialMonth);
 
@@ -35,7 +38,7 @@ export function BookingCalendar({ value, onChange, minDate, maxDate }) {
   const startOfMonth = viewMonth.startOf("month");
   const daysInMonth = startOfMonth.daysInMonth();
   const offset = (startOfMonth.day() + 6) % 7;
-  const cells = [];
+  const cells: Array<Dayjs | null> = [];
 
   for (let i = 0; i < offset; i += 1) {
     cells.push(null);
@@ -147,7 +150,15 @@ export function BookingCalendar({ value, onChange, minDate, maxDate }) {
   );
 }
 
-function CalendarNavButton({ children, disabled, onClick, label, testId }) {
+interface CalendarNavButtonProps {
+  children: ReactNode;
+  disabled: boolean;
+  onClick: () => void;
+  label: string;
+  testId: string;
+}
+
+function CalendarNavButton({ children, disabled, onClick, label, testId }: CalendarNavButtonProps) {
   return (
     <button
       type="button"

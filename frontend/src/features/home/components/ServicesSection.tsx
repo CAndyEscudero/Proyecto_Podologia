@@ -1,5 +1,5 @@
-import { services } from "../../data/homeContent";
-import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
+import { services } from "../data/home-content";
+import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
 
 export function ServicesSection() {
   return (

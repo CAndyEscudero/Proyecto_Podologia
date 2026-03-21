@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { siteConfig } from "../../app/siteConfig";
+import { siteConfig } from "../../app/config/site-config";
 import { trustPillars } from "../../data/homeContent";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 export function HeroSection() {
   return (

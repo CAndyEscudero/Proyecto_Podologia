@@ -1,7 +1,7 @@
-import { siteConfig } from "../../app/siteConfig";
-import { buildWhatsAppUrl } from "../../utils/whatsapp";
-import { Button } from "../ui/Button";
-import { SectionHeading } from "../ui/SectionHeading";
+import { siteConfig } from "../../app/config/site-config";
+import { buildWhatsAppUrl } from "../../shared/utils/whatsapp";
+import { Button } from "../../shared/ui/button/Button";
+import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
 
 export function ContactSection() {
   return (

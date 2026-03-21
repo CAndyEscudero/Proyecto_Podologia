@@ -1,13 +1,13 @@
 const TOKEN_KEY = "podologia_admin_token";
 
-export function getStoredToken() {
+export function getStoredToken(): string | null {
   return window.localStorage.getItem(TOKEN_KEY);
 }
 
-export function setStoredToken(token) {
+export function setStoredToken(token: string): void {
   window.localStorage.setItem(TOKEN_KEY, token);
 }
 
-export function clearStoredToken() {
+export function clearStoredToken(): void {
   window.localStorage.removeItem(TOKEN_KEY);
 }

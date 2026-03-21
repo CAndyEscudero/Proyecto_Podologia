@@ -1,5 +1,5 @@
 import { testimonials } from "../../data/homeContent";
-import { SectionHeading } from "../ui/SectionHeading";
+import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
 
 export function TestimonialsSection() {
   return (

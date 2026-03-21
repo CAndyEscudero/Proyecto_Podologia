@@ -59,24 +59,24 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Nueva estructura de estilos
 
-- [ ] Crear `frontend/src/styles/`.
-- [ ] Crear `frontend/src/styles/index.css`.
-- [ ] Crear `frontend/src/styles/tokens.css`.
-- [ ] Crear `frontend/src/styles/base.css`.
-- [ ] Crear `frontend/src/styles/components.css`.
-- [ ] Crear `frontend/src/styles/utilities.css`.
+- [x] Crear `frontend/src/styles/`.
+- [x] Crear `frontend/src/styles/index.css`.
+- [x] Crear `frontend/src/styles/tokens.css`.
+- [x] Crear `frontend/src/styles/base.css`.
+- [x] Crear `frontend/src/styles/components.css`.
+- [x] Crear `frontend/src/styles/utilities.css`.
 
 ### Reubicacion de estilos actuales
 
-- [ ] Mover reglas globales desde `frontend/src/index.css` a `base.css`.
-- [ ] Mover clases reutilizables (`.card-surface`, `.field-input`, etc.) a `components.css`.
-- [ ] Mover variables o tokens visuales a `tokens.css`.
-- [ ] Dejar `styles/index.css` como punto de entrada de Tailwind.
-- [ ] Actualizar el import en `main.tsx`.
+- [x] Mover reglas globales desde `frontend/src/index.css` a `base.css`.
+- [x] Mover clases reutilizables (`.card-surface`, `.field-input`, etc.) a `components.css`.
+- [x] Mover variables o tokens visuales a `tokens.css`.
+- [x] Dejar `styles/index.css` como punto de entrada de Tailwind.
+- [x] Actualizar el import en `main.tsx`.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Comparar visualmente home.
 - [ ] Comparar visualmente booking.
 - [ ] Comparar visualmente admin login.
@@ -85,31 +85,31 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Config
 
-- [ ] Migrar `frontend/src/app/siteConfig.js` a `frontend/src/app/config/site-config.ts`.
-- [ ] Crear `frontend/src/app/config/env.ts` si hace falta centralizar variables.
+- [x] Migrar `frontend/src/app/siteConfig.js` a `frontend/src/app/config/site-config.ts`.
+- [x] Crear `frontend/src/app/config/env.ts` si hace falta centralizar variables.
 
 ### Shared API y utils
 
-- [ ] Migrar `frontend/src/lib/http.js` a `frontend/src/shared/api/http.ts`.
-- [ ] Migrar `frontend/src/utils/auth.js` a `frontend/src/shared/utils/auth.ts`.
-- [ ] Migrar `frontend/src/utils/whatsapp.js` a `frontend/src/shared/utils/whatsapp.ts`.
-- [ ] Migrar `frontend/src/hooks/useAuthGuard.jsx` a `frontend/src/shared/hooks/useAuthGuard.tsx`.
+- [x] Migrar `frontend/src/lib/http.js` a `frontend/src/shared/api/http.ts`.
+- [x] Migrar `frontend/src/utils/auth.js` a `frontend/src/shared/utils/auth.ts`.
+- [x] Migrar `frontend/src/utils/whatsapp.js` a `frontend/src/shared/utils/whatsapp.ts`.
+- [x] Migrar `frontend/src/hooks/useAuthGuard.jsx` a `frontend/src/shared/hooks/useAuthGuard.tsx`.
 
 ### Shared UI
 
-- [ ] Migrar `frontend/src/components/ui/Button.jsx` a `frontend/src/shared/ui/button/Button.tsx`.
-- [ ] Migrar `frontend/src/components/ui/SectionHeading.jsx` a `frontend/src/shared/ui/section-heading/SectionHeading.tsx`.
-- [ ] Tipar props de los componentes shared exportados.
+- [x] Migrar `frontend/src/components/ui/Button.jsx` a `frontend/src/shared/ui/button/Button.tsx`.
+- [x] Migrar `frontend/src/components/ui/SectionHeading.jsx` a `frontend/src/shared/ui/section-heading/SectionHeading.tsx`.
+- [x] Tipar props de los componentes shared exportados.
 
 ### Tipos base compartidos
 
-- [ ] Crear `frontend/src/shared/types/common.ts`.
-- [ ] Crear `frontend/src/shared/types/api.ts`.
-- [ ] Crear tipos para respuestas simples de auth y errores comunes.
+- [x] Crear `frontend/src/shared/types/common.ts`.
+- [x] Crear `frontend/src/shared/types/api.ts`.
+- [x] Crear tipos para respuestas simples de auth y errores comunes.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Verificar login admin.
 - [ ] Verificar navegación pública.
 - [ ] Verificar que el token sigue guardándose y limpiándose bien.

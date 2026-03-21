@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/adminApi";
-import { setStoredToken } from "../../utils/auth";
-import { Button } from "../../components/ui/Button";
+import { setStoredToken } from "../../shared/utils/auth";
+import { Button } from "../../shared/ui/button/Button";
 
 const loginSchema = z.object({
   email: z.string().trim().min(6, "Email invalido").max(120, "Email invalido").email("Email invalido"),

@@ -1,9 +1,22 @@
-export const siteConfig = {
-  businessName: import.meta.env.VITE_BUSINESS_NAME || "Pies Sanos Venado",
+import { env } from "./env";
+
+interface SiteConfig {
+  businessName: string;
+  location: string;
+  address: string;
+  phone: string;
+  whatsappNumber: string;
+  instagramUrl: string;
+  heroTitle: string;
+  heroCopy: string;
+}
+
+export const siteConfig: SiteConfig = {
+  businessName: env.businessName,
   location: "Venado Tuerto, Santa Fe",
   address: "Av. Casey 123, Venado Tuerto",
   phone: "+54 9 3462 000000",
-  whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || "5493462000000",
+  whatsappNumber: env.whatsappNumber,
   instagramUrl: "https://instagram.com/piessanosvt",
   heroTitle: "Cuidamos tus pies con una experiencia profesional, clara y cercana",
   heroCopy:

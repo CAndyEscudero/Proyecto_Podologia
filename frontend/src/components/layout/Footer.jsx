@@ -1,4 +1,4 @@
-import { siteConfig } from "../../app/siteConfig";
+import { siteConfig } from "../../app/config/site-config";
 
 export function Footer() {
   return (

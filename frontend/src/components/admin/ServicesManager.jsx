@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 const serviceSchema = z.object({
   name: z.string().trim().min(3, "Ingresa un nombre valido").max(80, "Maximo 80 caracteres"),

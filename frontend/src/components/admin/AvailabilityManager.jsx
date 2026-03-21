@@ -3,7 +3,7 @@ import { z } from "zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 const ruleSchema = z.object({
   dayOfWeek: z.coerce.number().int().min(0).max(6),

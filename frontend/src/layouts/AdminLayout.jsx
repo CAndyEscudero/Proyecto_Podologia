@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { clearStoredToken } from "../utils/auth";
+import { clearStoredToken } from "../shared/utils/auth";
 import { getBusinessSettings, getMe } from "../services/adminApi";
 
 export function AdminLayout() {

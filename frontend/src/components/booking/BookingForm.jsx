@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { createAppointment, getAvailableSlots, getPublicServices } from "../../services/publicApi";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 import { BookingCalendar } from "./BookingCalendar";
 
 const today = dayjs().format("YYYY-MM-DD");

@@ -1,4 +1,13 @@
-export function SectionHeading({ eyebrow, title, copy, align = "center" }) {
+import type { TextAlign } from "../../types/common";
+
+interface SectionHeadingProps {
+  eyebrow?: string;
+  title: string;
+  copy?: string;
+  align?: TextAlign;
+}
+
+export function SectionHeading({ eyebrow, title, copy, align = "center" }: SectionHeadingProps) {
   return (
     <div className={align === "left" ? "max-w-2xl" : "mx-auto max-w-3xl text-center"}>
       {eyebrow ? (

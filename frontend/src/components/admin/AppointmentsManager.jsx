@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { getAvailableSlots } from "../../services/adminApi";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 const personNameRegex = /^[A-Za-zÀ-ÿ' -]{2,80}$/;
 const phoneRegex = /^[0-9+() -]{8,20}$/;

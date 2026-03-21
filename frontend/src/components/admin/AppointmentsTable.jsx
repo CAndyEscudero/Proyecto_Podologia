@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 const statusOptions = [
   { label: "Pendiente", value: "PENDING" },

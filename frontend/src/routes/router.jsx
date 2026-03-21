@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import { AuthGuard } from "../hooks/useAuthGuard";
+import { AuthGuard } from "../shared/hooks/useAuthGuard";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { AdminDashboardPage } from "../pages/admin/AdminDashboardPage";

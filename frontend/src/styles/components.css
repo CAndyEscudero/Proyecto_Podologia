@@ -1,29 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  @apply bg-brand-cream font-sans text-brand-ink antialiased;
-  background-image:
-    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 28%),
-    linear-gradient(180deg, #fffdfb 0%, #fff7f4 100%);
-}
-
-.bg-admin-shell {
-  background-image:
-    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(227, 205, 210, 0.55), transparent 24%),
-    linear-gradient(180deg, #fffdfc 0%, #fff7f4 100%);
-}
-
-#root {
-  min-height: 100vh;
-}
-
 .container-shell {
   @apply mx-auto w-full max-w-7xl px-5 md:px-8;
 }

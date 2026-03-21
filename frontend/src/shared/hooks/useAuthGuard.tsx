@@ -1,7 +1,12 @@
+import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { getStoredToken } from "../utils/auth";
 
-export function AuthGuard({ children }) {
+interface AuthGuardProps {
+  children: ReactNode;
+}
+
+export function AuthGuard({ children }: AuthGuardProps) {
   const token = getStoredToken();
 
   if (!token) {

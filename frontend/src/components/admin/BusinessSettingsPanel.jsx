@@ -2,7 +2,7 @@ import { z } from "zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../ui/Button";
+import { Button } from "../../shared/ui/button/Button";
 
 const settingsSchema = z.object({
   businessName: z.string().trim().min(3, "Ingresa un nombre valido").max(120, "Maximo 120 caracteres"),

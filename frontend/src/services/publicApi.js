@@ -1,4 +1,4 @@
-import { http } from "../lib/http";
+import { http } from "../shared/api/http";
 
 export async function getPublicServices() {
   const { data } = await http.get("/services");

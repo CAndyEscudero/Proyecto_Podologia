@@ -1,5 +1,5 @@
 import { BookingForm } from "../../components/booking/BookingForm";
-import { SectionHeading } from "../../components/ui/SectionHeading";
+import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
 
 export function BookingPage() {
   return (

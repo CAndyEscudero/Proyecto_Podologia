@@ -1,5 +1,5 @@
 import { MessageCircleMore } from "lucide-react";
-import { buildWhatsAppUrl } from "../../utils/whatsapp";
+import { buildWhatsAppUrl } from "../../shared/utils/whatsapp";
 
 export function WhatsAppFloat() {
   return (

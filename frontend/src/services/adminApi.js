@@ -1,4 +1,4 @@
-import { http } from "../lib/http";
+import { http } from "../shared/api/http";
 
 export async function login(credentials) {
   const { data } = await http.post("/auth/login", credentials);

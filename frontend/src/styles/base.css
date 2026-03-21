@@ -1,0 +1,21 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-brand-cream font-sans text-brand-ink antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 28%),
+    linear-gradient(180deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.bg-admin-shell {
+  background-image:
+    radial-gradient(circle at top left, rgba(244, 221, 226, 0.85), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(227, 205, 210, 0.55), transparent 24%),
+    linear-gradient(180deg, var(--admin-bg-start) 0%, var(--admin-bg-end) 100%);
+}

@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
-import { siteConfig } from "../../app/siteConfig";
-import { Button } from "../ui/Button";
+import { siteConfig } from "../../app/config/site-config";
+import { Button } from "../../shared/ui/button/Button";
 
 const links = [
   { to: "/", label: "Inicio" },

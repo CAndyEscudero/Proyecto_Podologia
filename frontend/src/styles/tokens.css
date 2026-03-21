@@ -1,0 +1,8 @@
+:root {
+  --app-bg-start: #fffdfb;
+  --app-bg-end: #fff7f4;
+  --admin-bg-start: #fffdfc;
+  --admin-bg-end: #fff7f4;
+  --shell-max-width: 80rem;
+  --admin-shell-max-width: 107.5rem;
+}

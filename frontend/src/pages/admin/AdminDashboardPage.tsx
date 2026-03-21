@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
-import { Menu } from "lucide-react";
+import { CalendarClock, Menu } from "lucide-react";
 import type { AxiosError } from "axios";
 import { AdminSummary } from "../../features/admin/appointments/components/AdminSummary";
 import { AppointmentsManager } from "../../features/admin/appointments/components/AppointmentsManager";
@@ -503,7 +503,7 @@ export function AdminDashboardPage() {
         onChange={handleSidebarChange}
         showCloseButton
         onClose={() => setIsSidebarOpen(false)}
-        className={`fixed inset-y-0 left-0 z-50 w-[290px] max-w-[85vw] overflow-y-auto border-r border-rose-100 bg-[#fffaf7] p-4 shadow-2xl transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-[290px] max-w-[85vw] overflow-y-auto bg-[#fcf8f8] p-4 transition-transform duration-300 lg:hidden ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       />
@@ -517,6 +517,31 @@ export function AdminDashboardPage() {
         />
 
         <div className="min-w-0 space-y-5">
+          <div className="rounded-[2rem] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(248,221,229,0.4),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,246,0.96))] px-4 py-5 shadow-[0_30px_60px_-42px_rgba(95,67,77,0.42)] md:px-6 md:py-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-3xl">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.26em] text-brand-wine">
+                  Panel administrativo
+                </p>
+                <h1 className="mt-2 font-display text-[2rem] leading-none text-brand-ink md:text-[2.5rem]">
+                  Agenda clara para operar sin friccion
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 md:text-[15px]">
+                  Una vista pensada para recepcion y gestion diaria: primero el contexto, despues los filtros y por ultimo la accion.
+                </p>
+              </div>
+
+              <div className="hidden rounded-[1.4rem] border border-white/80 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm md:block">
+                <div className="flex items-center gap-2 text-brand-wine">
+                  <CalendarClock size={16} />
+                  <span className="text-xs font-extrabold uppercase tracking-[0.18em]">Foco actual</span>
+                </div>
+                <p className="mt-2 font-semibold text-brand-ink">{activeNavigationItem.label}</p>
+                <p className="mt-1 text-xs text-slate-500">{activeNavigationItem.copy}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between gap-3 rounded-[1.45rem] border border-rose-100 bg-white/82 px-4 py-3 text-sm text-slate-600 shadow-soft lg:hidden">
             <div className="min-w-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Seccion activa</p>
@@ -541,7 +566,17 @@ export function AdminDashboardPage() {
             </div>
           </div>
 
-          <AdminSummary items={summaryItems} />
+          {activeTab === "appointmentCreate" || activeTab === "appointmentManage" ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 px-1">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">Snapshot diario</p>
+                  <p className="mt-1 text-sm text-slate-500">Resumen rapido para priorizar la operacion de agenda.</p>
+                </div>
+              </div>
+              <AdminSummary items={summaryItems} />
+            </div>
+          ) : null}
 
           {activeTab === "appointmentCreate" ? (
             <AppointmentsManager

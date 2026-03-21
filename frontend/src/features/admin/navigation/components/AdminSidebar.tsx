@@ -39,9 +39,12 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   return (
     <aside className={clsx("space-y-4", className)}>
-      <div className="card-surface bg-white/92 p-4">
+      <div className="rounded-[1.85rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(251,247,247,0.96))] p-4 shadow-[0_22px_50px_-36px_rgba(90,64,74,0.38)]">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">Navegacion</p>
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-brand-wine">Navegacion</p>
+            <p className="mt-1 text-sm text-slate-500">Panel operativo</p>
+          </div>
           {showCloseButton ? (
             <button
               type="button"
@@ -54,7 +57,7 @@ export function AdminSidebar({
           ) : null}
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-2.5">
           {items.map((item) => {
             const Icon = icons[item.id];
             const isParentActive = item.children?.some((child) => child.id === activeTab) || activeTab === item.id;
@@ -68,10 +71,10 @@ export function AdminSidebar({
                     onClose?.();
                   }}
                   className={clsx(
-                    "flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-3 text-left transition",
+                    "flex w-full items-center justify-between rounded-[1.4rem] border px-4 py-3.5 text-left transition",
                     isParentActive
-                      ? "border-brand-rose bg-rose-50 text-brand-ink shadow-soft"
-                      : "border-transparent bg-white text-slate-600 hover:border-rose-200 hover:bg-rose-50/60"
+                      ? "border-rose-200 bg-gradient-to-r from-rose-50 to-white text-brand-ink shadow-[0_18px_34px_-28px_rgba(148,100,114,0.55)]"
+                      : "border-transparent bg-white/75 text-slate-600 hover:border-rose-200 hover:bg-white"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -89,14 +92,14 @@ export function AdminSidebar({
                     </div>
                   </div>
                   {item.badge ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-wine">
+                    <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-wine shadow-sm">
                       {item.badge}
                     </span>
                   ) : null}
                 </button>
 
                 {item.children?.length && isParentActive ? (
-                  <div className="space-y-1 pl-3">
+                  <div className="space-y-1.5 pl-3">
                     {item.children.map((child) => {
                       const ChildIcon = icons[child.id];
                       const isChildActive = activeTab === child.id;
@@ -110,10 +113,10 @@ export function AdminSidebar({
                             onClose?.();
                           }}
                           className={clsx(
-                            "flex w-full items-center justify-between rounded-[1.1rem] border px-3 py-2.5 text-left transition",
+                            "flex w-full items-center justify-between rounded-[1.15rem] border px-3 py-2.5 text-left transition",
                             isChildActive
-                              ? "border-brand-rose bg-white text-brand-ink"
-                              : "border-transparent bg-transparent text-slate-500 hover:border-rose-200 hover:bg-white/70 hover:text-brand-ink"
+                              ? "border-rose-200 bg-white text-brand-ink shadow-[0_12px_24px_-24px_rgba(148,100,114,0.55)]"
+                              : "border-transparent bg-transparent text-slate-500 hover:border-rose-200 hover:bg-white/80 hover:text-brand-ink"
                           )}
                         >
                           <div className="flex items-center gap-2.5">

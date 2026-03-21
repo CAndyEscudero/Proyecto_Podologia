@@ -1,6 +1,20 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import dayjs from "dayjs";
+import {
+  CalendarDays,
+  CircleCheckBig,
+  CircleDashed,
+  CircleOff,
+  FilterX,
+  MoreHorizontal,
+  PencilLine,
+  Rows3,
+  Search,
+  TableProperties,
+  Trash2,
+  WandSparkles,
+} from "lucide-react";
 import { Button } from "../../../../shared/ui/button/Button";
 import type {
   Appointment,
@@ -17,10 +31,10 @@ const statusOptions: ReadonlyArray<{ label: string; value: AppointmentStatus }> 
 ];
 
 const statusStyles: Record<AppointmentStatus, string> = {
-  PENDING: "bg-amber-50 text-amber-700 border-amber-100",
-  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  CANCELED: "bg-rose-50 text-rose-700 border-rose-100",
-  COMPLETED: "bg-slate-100 text-slate-700 border-slate-200",
+  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
+  CONFIRMED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  CANCELED: "border-rose-200 bg-rose-50 text-rose-700",
+  COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
 };
 
 const agendaBlocks = [
@@ -43,6 +57,31 @@ interface AgendaBlock {
   items: Appointment[];
 }
 
+interface ActionIconButtonProps {
+  ariaLabel: string;
+  title: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface AppointmentActionMenuProps {
+  appointment: Appointment;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onSelectEdit: (appointment: Appointment) => void;
+  onSelectReschedule: (appointment: Appointment) => void;
+  onDeleteAppointment: (id: number) => void | Promise<void>;
+  isDeletingId: number | null;
+}
+
+interface StatusQuickActionsProps {
+  appointment: Appointment;
+  isUpdatingId: number | null;
+  onStatusChange: (id: number, status: AppointmentStatus) => void | Promise<void>;
+}
+
 export function AppointmentsTable({
   appointments,
   services,
@@ -58,6 +97,7 @@ export function AppointmentsTable({
   selectedAppointmentId,
 }: AppointmentsTableProps) {
   const [view, setView] = useState<AppointmentTableView>("timeline");
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
 
   const summary = useMemo(
     () => ({
@@ -124,183 +164,224 @@ export function AppointmentsTable({
   );
 
   return (
-    <div className="card-surface overflow-hidden">
-      <div className="border-b border-rose-100 px-6 py-5">
+    <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,246,0.96))] shadow-[0_32px_60px_-42px_rgba(90,64,74,0.36)]">
+      <div className="border-b border-slate-200/80 px-5 py-5 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-brand-ink">Agenda y gestion de turnos</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Vista diaria pensada para operar la agenda con mas rapidez y menos friccion.
+          <div className="max-w-3xl">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-brand-wine">
+              Gestion diaria
+            </p>
+            <h3 className="mt-2 text-2xl font-semibold text-brand-ink">Agenda de turnos</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Una vista enfocada en filtrar rapido, detectar prioridades y actuar sin saturacion visual.
             </p>
           </div>
 
-          <div className="rounded-full border border-rose-200 bg-white p-1">
-            {[
-              { id: "timeline", label: "Agenda" },
-              { id: "table", label: "Tabla" },
-            ].map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setView(option.id as AppointmentTableView)}
-                className={clsx(
-                  "rounded-full px-4 py-2 text-xs font-bold transition",
-                  view === option.id ? "bg-brand-wine text-white" : "text-slate-500 hover:text-brand-wine"
-                )}
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1.5 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setView("timeline")}
+              className={clsx(
+                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition",
+                view === "timeline" ? "bg-brand-wine text-white" : "text-slate-500 hover:text-brand-wine"
+              )}
+            >
+              <Rows3 size={15} />
+              Agenda
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              className={clsx(
+                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition",
+                view === "table" ? "bg-brand-wine text-white" : "text-slate-500 hover:text-brand-wine"
+              )}
+            >
+              <TableProperties size={15} />
+              Tabla
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-b border-slate-200/80 bg-white px-5 py-5 md:px-6">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Desde
+              </span>
+              <input
+                type="date"
+                data-testid="appointments-filter-date-from"
+                value={filters.dateFrom}
+                onChange={(event) => onFiltersChange({ ...filters, dateFrom: event.target.value })}
+                className="field-input min-h-11 rounded-[1.1rem]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Hasta
+              </span>
+              <input
+                type="date"
+                data-testid="appointments-filter-date-to"
+                value={filters.dateTo}
+                onChange={(event) => onFiltersChange({ ...filters, dateTo: event.target.value })}
+                className="field-input min-h-11 rounded-[1.1rem]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Estado
+              </span>
+              <select
+                data-testid="appointments-filter-status"
+                value={filters.status}
+                onChange={(event) =>
+                  onFiltersChange({
+                    ...filters,
+                    status: (event.target.value as AppointmentStatus | "") || "",
+                  })
+                }
+                className="field-input min-h-11 rounded-[1.1rem]"
               >
-                {option.label}
+                <option value="">Todos</option>
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Servicio
+              </span>
+              <select
+                data-testid="appointments-filter-service"
+                value={filters.serviceId}
+                onChange={(event) => onFiltersChange({ ...filters, serviceId: event.target.value })}
+                className="field-input min-h-11 rounded-[1.1rem]"
+              >
+                <option value="">Todos</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                Cliente
+              </span>
+              <div className="relative">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  data-testid="appointments-filter-client"
+                  value={filters.client}
+                  onChange={(event) => onFiltersChange({ ...filters, client: event.target.value })}
+                  className="field-input min-h-11 rounded-[1.1rem] pl-11"
+                  placeholder="Nombre, apellido o telefono"
+                />
+              </div>
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            {quickDateActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                data-testid={`appointments-quick-${action.label.toLowerCase()}`}
+                onClick={() => onFiltersChange(action.nextFilters)}
+                className="inline-flex min-h-10 items-center rounded-full border border-rose-200 bg-rose-50/70 px-4 text-xs font-bold text-brand-wine transition hover:border-brand-rose hover:bg-white"
+              >
+                {action.label}
               </button>
             ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 border-b border-rose-100 bg-rose-50/40 px-6 py-5 xl:grid-cols-[1fr_1fr_1fr_1fr_1.3fr_auto]">
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-brand-ink">Desde</span>
-          <input
-            type="date"
-            data-testid="appointments-filter-date-from"
-            value={filters.dateFrom}
-            onChange={(event) => onFiltersChange({ ...filters, dateFrom: event.target.value })}
-            className="field-input"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-brand-ink">Hasta</span>
-          <input
-            type="date"
-            data-testid="appointments-filter-date-to"
-            value={filters.dateTo}
-            onChange={(event) => onFiltersChange({ ...filters, dateTo: event.target.value })}
-            className="field-input"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-brand-ink">Estado</span>
-          <select
-            data-testid="appointments-filter-status"
-            value={filters.status}
-            onChange={(event) =>
-              onFiltersChange({
-                ...filters,
-                status: (event.target.value as AppointmentStatus | "") || "",
-              })
-            }
-            className="field-input"
-          >
-            <option value="">Todos</option>
-            {statusOptions.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-brand-ink">Servicio</span>
-          <select
-            data-testid="appointments-filter-service"
-            value={filters.serviceId}
-            onChange={(event) => onFiltersChange({ ...filters, serviceId: event.target.value })}
-            className="field-input"
-          >
-            <option value="">Todos</option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-brand-ink">Cliente</span>
-          <input
-            type="text"
-            data-testid="appointments-filter-client"
-            value={filters.client}
-            onChange={(event) => onFiltersChange({ ...filters, client: event.target.value })}
-            className="field-input"
-            placeholder="Nombre, apellido o telefono"
-          />
-        </label>
-
-        <div className="flex flex-wrap items-end gap-2 xl:justify-end">
-          {quickDateActions.map((action) => (
-            <Button
-              key={action.label}
-              type="button"
-              variant="secondary"
-              data-testid={`appointments-quick-${action.label.toLowerCase()}`}
-              className="min-h-10 px-4 text-xs"
-              onClick={() => onFiltersChange(action.nextFilters)}
+            <ActionIconButton
+              ariaLabel="Limpiar filtros"
+              title="Limpiar filtros"
+              onClick={() =>
+                onFiltersChange({
+                  dateFrom: dayjs().format("YYYY-MM-DD"),
+                  dateTo: dayjs().add(6, "day").format("YYYY-MM-DD"),
+                  status: "",
+                  client: "",
+                  serviceId: "",
+                })
+              }
+              className="border-rose-200 bg-white text-slate-500 hover:border-brand-rose hover:text-brand-wine"
             >
-              {action.label}
-            </Button>
-          ))}
-          <Button
-            type="button"
-            variant="secondary"
-            data-testid="appointments-filter-clear"
-            className="min-h-10 px-4 text-xs"
-            onClick={() =>
-              onFiltersChange({
-                dateFrom: dayjs().format("YYYY-MM-DD"),
-                dateTo: dayjs().add(6, "day").format("YYYY-MM-DD"),
-                status: "",
-                client: "",
-                serviceId: "",
-              })
-            }
-          >
-            Limpiar
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-3 border-b border-rose-100 bg-white px-6 py-5 md:grid-cols-2 xl:grid-cols-5">
-        <SummaryPill label="Turnos en vista" value={summary.total} tone="text-brand-wine" />
-        <SummaryPill label="Pendientes" value={summary.pending} tone="text-amber-700" />
-        <SummaryPill label="Confirmados" value={summary.confirmed} tone="text-emerald-700" />
-        <SummaryPill label="Realizados" value={summary.completed} tone="text-slate-700" />
-        <SummaryPill label="Cancelados" value={summary.canceled} tone="text-rose-700" />
-      </div>
-
-      <div className="grid gap-3 border-b border-rose-100 bg-white px-6 py-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="rounded-[1.4rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Rango activo</p>
-          <p className="mt-3 text-sm font-semibold text-brand-ink">
-            {filters.dateFrom ? dayjs(filters.dateFrom).format("DD/MM/YYYY") : "Sin inicio"} -{" "}
-            {filters.dateTo ? dayjs(filters.dateTo).format("DD/MM/YYYY") : "Sin fin"}
-          </p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">
-            {filters.serviceId ? "Filtrado por servicio especifico." : "Incluye todos los servicios activos."}{" "}
-            {filters.status ? `Estado: ${translateStatus(filters.status)}.` : "Sin restriccion por estado."}
-          </p>
-        </div>
-
-        <div className="rounded-[1.4rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-            Servicios con mas movimiento
-          </p>
-          <div className="mt-3 space-y-2 text-sm text-slate-600">
-            {serviceSummary.length ? (
-              serviceSummary.map(([serviceName, count]) => (
-                <div key={serviceName} className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-brand-ink">{serviceName}</span>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-wine">
-                    {count} turnos
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p>No hay suficiente actividad para mostrar un ranking.</p>
-            )}
+              <FilterX size={16} />
+            </ActionIconButton>
           </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-brand-wine shadow-sm">
+                <CalendarDays size={18} />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Rango activo</p>
+                <p className="mt-2 text-sm font-semibold text-brand-ink">
+                  {filters.dateFrom ? dayjs(filters.dateFrom).format("DD/MM/YYYY") : "Sin inicio"} -{" "}
+                  {filters.dateTo ? dayjs(filters.dateTo).format("DD/MM/YYYY") : "Sin fin"}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  {filters.serviceId ? "Filtrado por servicio especifico." : "Incluye todos los servicios activos."}{" "}
+                  {filters.status ? `Estado: ${translateStatus(filters.status)}.` : "Sin restriccion por estado."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-brand-wine shadow-sm">
+                <WandSparkles size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Servicios con mas movimiento
+                </p>
+                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                  {serviceSummary.length ? (
+                    serviceSummary.map(([serviceName, count]) => (
+                      <div key={serviceName} className="flex items-center justify-between gap-3">
+                        <span className="truncate font-medium text-brand-ink">{serviceName}</span>
+                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-wine">
+                          {count} turnos
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p>No hay suficiente actividad para mostrar un ranking.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <SummaryPill label="Turnos en vista" value={summary.total} tone="text-brand-ink" />
+          <SummaryPill label="Pendientes" value={summary.pending} tone="text-amber-700" />
+          <SummaryPill label="Confirmados" value={summary.confirmed} tone="text-emerald-700" />
+          <SummaryPill label="Realizados" value={summary.completed} tone="text-slate-700" />
+          <SummaryPill label="Cancelados" value={summary.canceled} tone="text-rose-700" />
         </div>
       </div>
 
@@ -309,9 +390,12 @@ export function AppointmentsTable({
       ) : appointments.length === 0 ? (
         <div className="px-6 py-10 text-sm text-slate-500">No hay turnos para los filtros seleccionados.</div>
       ) : view === "timeline" ? (
-        <div className="grid gap-5 p-6 xl:grid-cols-3">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-3">
           {groupedAppointments.map((block) => (
-            <section key={block.id} className="rounded-[1.75rem] border border-rose-100 bg-white p-4">
+            <section
+              key={block.id}
+              className="rounded-[1.7rem] border border-slate-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(90,64,74,0.34)]"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold uppercase tracking-[0.18em] text-brand-wine">{block.label}</p>
@@ -323,7 +407,7 @@ export function AppointmentsTable({
 
               <div className="mt-4 space-y-3">
                 {block.items.length === 0 ? (
-                  <div className="rounded-[1.25rem] border border-dashed border-rose-200 bg-rose-50/40 px-4 py-5 text-sm text-slate-500">
+                  <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-5 text-sm text-slate-500">
                     No hay actividad en este tramo horario.
                   </div>
                 ) : (
@@ -331,42 +415,45 @@ export function AppointmentsTable({
                     <article
                       key={appointment.id}
                       className={clsx(
-                        "rounded-[1.5rem] border px-4 py-4 transition",
+                        "rounded-[1.4rem] border px-4 py-4 transition",
                         selectedAppointmentId === appointment.id
-                          ? "border-brand-rose bg-rose-50/70 shadow-soft"
-                          : "border-rose-100 bg-white"
+                          ? "border-brand-rose bg-rose-50/60 shadow-[0_18px_34px_-28px_rgba(148,100,114,0.58)]"
+                          : "border-slate-200/80 bg-white"
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-lg font-semibold text-brand-ink">
                             {appointment.startTime} - {appointment.endTime}
                           </p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
+                          <p className="mt-1 truncate text-sm font-medium text-slate-700">
                             {appointment.client.firstName} {appointment.client.lastName}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">{appointment.service.name}</p>
                         </div>
-                        <span
-                          className={clsx(
-                            "inline-flex rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide",
-                            statusStyles[appointment.status]
-                          )}
-                        >
-                          {translateStatus(appointment.status)}
-                        </span>
+                        <StatusBadge status={appointment.status} />
                       </div>
 
-                      <div className="mt-3 space-y-1 text-xs text-slate-500">
+                      <div className="mt-3 grid gap-1 text-xs text-slate-500">
                         <p>{appointment.client.phone}</p>
-                        <p>{appointment.client.email || "Sin email"}</p>
+                        <p className="truncate">{appointment.client.email || "Sin email"}</p>
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectEdit(appointment)}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="min-h-10 px-3 text-xs"
+                          onClick={() => onSelectEdit(appointment)}
+                        >
                           Editar
                         </Button>
-                        <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectReschedule(appointment)}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="min-h-10 px-3 text-xs"
+                          onClick={() => onSelectReschedule(appointment)}
+                        >
                           Reprogramar
                         </Button>
                         <Button
@@ -381,18 +468,19 @@ export function AppointmentsTable({
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {statusOptions.filter((status) => status.value !== appointment.status).map((status) => (
-                          <Button
-                            key={status.value}
-                            type="button"
-                            variant="secondary"
-                            className="min-h-10 px-3 text-[11px]"
-                            disabled={isUpdatingId === appointment.id}
-                            onClick={() => onStatusChange(appointment.id, status.value)}
-                          >
-                            {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
-                          </Button>
-                        ))}
+                        {statusOptions
+                          .filter((status) => status.value !== appointment.status)
+                          .map((status) => (
+                            <button
+                              key={status.value}
+                              type="button"
+                              disabled={isUpdatingId === appointment.id}
+                              onClick={() => onStatusChange(appointment.id, status.value)}
+                              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:border-brand-rose hover:text-brand-wine disabled:cursor-wait disabled:opacity-70"
+                            >
+                              {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
+                            </button>
+                          ))}
                       </div>
                     </article>
                   ))
@@ -402,17 +490,16 @@ export function AppointmentsTable({
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-white text-slate-500">
+        <div className="overflow-x-auto px-2 py-2 md:px-3">
+          <table className="min-w-full border-separate border-spacing-y-2 text-left text-sm">
+            <thead className="text-slate-400">
               <tr>
-                <th className="px-6 py-4">Cliente</th>
-                <th className="px-6 py-4">Servicio</th>
-                <th className="px-6 py-4">Fecha</th>
-                <th className="px-6 py-4">Horario</th>
-                <th className="px-6 py-4">Estado</th>
-                <th className="px-6 py-4">Acciones</th>
-                <th className="px-6 py-4">Gestion</th>
+                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Paciente</th>
+                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Turno</th>
+                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Servicio</th>
+                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Estado</th>
+                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Actualizacion</th>
+                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-[0.16em]">Gestion</th>
               </tr>
             </thead>
             <tbody>
@@ -420,65 +507,58 @@ export function AppointmentsTable({
                 <tr
                   key={appointment.id}
                   className={clsx(
-                    "border-t border-rose-100/80 align-top",
-                    selectedAppointmentId === appointment.id && "bg-rose-50/40"
+                    "overflow-hidden rounded-[1.5rem] bg-white shadow-[0_16px_40px_-34px_rgba(90,64,74,0.34)]",
+                    selectedAppointmentId === appointment.id && "ring-2 ring-rose-200"
                   )}
                 >
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-brand-ink">
-                      {appointment.client.firstName} {appointment.client.lastName}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">{appointment.client.phone}</p>
-                    <p className="text-xs text-slate-500">{appointment.client.email || "Sin email"}</p>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">{appointment.service.name}</td>
-                  <td className="px-6 py-4 text-slate-600">{appointment.date}</td>
-                  <td className="px-6 py-4 text-slate-600">
-                    {appointment.startTime} - {appointment.endTime}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={clsx(
-                        "inline-flex rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide",
-                        statusStyles[appointment.status]
-                      )}
-                    >
-                      {translateStatus(appointment.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      {statusOptions.filter((status) => status.value !== appointment.status).map((status) => (
-                        <Button
-                          key={status.value}
-                          type="button"
-                          variant="secondary"
-                          className="min-h-10 px-3 text-xs"
-                          disabled={isUpdatingId === appointment.id}
-                          onClick={() => onStatusChange(appointment.id, status.value)}
-                        >
-                          {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
-                        </Button>
-                      ))}
+                  <td className="rounded-l-[1.5rem] px-4 py-4">
+                    <div className="min-w-[220px]">
+                      <p className="font-semibold text-brand-ink">
+                        {appointment.client.firstName} {appointment.client.lastName}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{appointment.client.phone}</p>
+                      <p className="truncate text-xs text-slate-400">
+                        {appointment.client.email || "Sin email"}
+                      </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectEdit(appointment)}>
-                        Editar
-                      </Button>
-                      <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectReschedule(appointment)}>
-                        Reprogramar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-10 px-3 text-xs"
-                        disabled={isDeletingId === appointment.id}
-                        onClick={() => onDeleteAppointment(appointment.id)}
-                      >
-                        {isDeletingId === appointment.id ? "Eliminando..." : "Eliminar"}
-                      </Button>
+                  <td className="px-4 py-4">
+                    <div className="min-w-[180px]">
+                      <p className="font-semibold text-brand-ink">{dayjs(appointment.date).format("DD/MM/YYYY")}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {appointment.startTime} - {appointment.endTime}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="min-w-[160px]">
+                      <p className="font-medium text-slate-700">{appointment.service.name}</p>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <StatusBadge status={appointment.status} />
+                  </td>
+                  <td className="px-4 py-4">
+                    <StatusQuickActions
+                      appointment={appointment}
+                      isUpdatingId={isUpdatingId}
+                      onStatusChange={onStatusChange}
+                    />
+                  </td>
+                  <td className="rounded-r-[1.5rem] px-4 py-4">
+                    <div className="flex justify-end">
+                      <AppointmentActionMenu
+                        appointment={appointment}
+                        isOpen={openActionMenuId === appointment.id}
+                        onToggle={() =>
+                          setOpenActionMenuId((current) => (current === appointment.id ? null : appointment.id))
+                        }
+                        onClose={() => setOpenActionMenuId(null)}
+                        onSelectEdit={onSelectEdit}
+                        onSelectReschedule={onSelectReschedule}
+                        onDeleteAppointment={onDeleteAppointment}
+                        isDeletingId={isDeletingId}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -493,12 +573,132 @@ export function AppointmentsTable({
 
 function SummaryPill({ label, value, tone }: SummaryPillProps) {
   return (
-    <div className="rounded-[1.25rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className={clsx("mt-3 font-sans text-[2rem] font-semibold leading-none tracking-tight tabular-nums", tone)}>
+    <div className="rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className={clsx("mt-3 font-sans text-[1.7rem] font-semibold leading-none tracking-tight tabular-nums", tone)}>
         {String(value).padStart(2, "0")}
       </p>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: AppointmentStatus }) {
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide",
+        statusStyles[status]
+      )}
+    >
+      {translateStatus(status)}
+    </span>
+  );
+}
+
+function StatusQuickActions({ appointment, isUpdatingId, onStatusChange }: StatusQuickActionsProps) {
+  return (
+    <div className="flex min-w-[190px] flex-wrap gap-2">
+      {statusOptions
+        .filter((status) => status.value !== appointment.status)
+        .slice(0, 2)
+        .map((status) => (
+          <button
+            key={status.value}
+            type="button"
+            disabled={isUpdatingId === appointment.id}
+            onClick={() => onStatusChange(appointment.id, status.value)}
+            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:border-brand-rose hover:bg-white hover:text-brand-wine disabled:cursor-wait disabled:opacity-70"
+          >
+            {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
+          </button>
+        ))}
+    </div>
+  );
+}
+
+function AppointmentActionMenu({
+  appointment,
+  isOpen,
+  onToggle,
+  onClose,
+  onSelectEdit,
+  onSelectReschedule,
+  onDeleteAppointment,
+  isDeletingId,
+}: AppointmentActionMenuProps) {
+  return (
+    <div className="relative">
+      <ActionIconButton
+        ariaLabel={`Abrir acciones del turno ${appointment.id}`}
+        title="Mas acciones"
+        onClick={onToggle}
+        className="border-slate-200 bg-white text-slate-500 hover:border-brand-rose hover:text-brand-wine"
+      >
+        <MoreHorizontal size={17} />
+      </ActionIconButton>
+
+      {isOpen ? (
+        <div className="absolute right-0 top-12 z-20 min-w-[190px] rounded-[1.1rem] border border-slate-200 bg-white p-2 shadow-xl">
+          <button
+            type="button"
+            onClick={() => {
+              onSelectEdit(appointment);
+              onClose();
+            }}
+            className="flex w-full items-center gap-3 rounded-[0.95rem] px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-ink"
+          >
+            <PencilLine size={15} className="text-brand-wine" />
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onSelectReschedule(appointment);
+              onClose();
+            }}
+            className="flex w-full items-center gap-3 rounded-[0.95rem] px-3 py-2.5 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-ink"
+          >
+            <CalendarDays size={15} className="text-brand-wine" />
+            Reprogramar
+          </button>
+          <button
+            type="button"
+            disabled={isDeletingId === appointment.id}
+            onClick={() => {
+              void onDeleteAppointment(appointment.id);
+              onClose();
+            }}
+            className="flex w-full items-center gap-3 rounded-[0.95rem] px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 disabled:cursor-wait disabled:opacity-70"
+          >
+            <Trash2 size={15} />
+            {isDeletingId === appointment.id ? "Eliminando..." : "Eliminar"}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ActionIconButton({
+  ariaLabel,
+  title,
+  onClick,
+  children,
+  className,
+}: ActionIconButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      title={title}
+      onClick={onClick}
+      className={clsx(
+        "inline-flex h-10 w-10 items-center justify-center rounded-full border transition",
+        className
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

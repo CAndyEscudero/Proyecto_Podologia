@@ -28,17 +28,30 @@ async function run() {
     await page.waitForSelector("text=Configuracion del negocio", { timeout: 15000 });
     result.tabOpened = true;
 
-    const businessName = await page.locator('input[type="text"]').first().inputValue();
-    const windowInput = await page.locator('input[type="number"]').first().inputValue();
+    const businessNameInput = page.getByLabel("Nombre comercial");
+    const bookingWindowInput = page.getByLabel("Ventana de reserva");
+    const appointmentGapInput = page.getByLabel("Separacion entre turnos");
+
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector('input[name="businessName"]');
+        return Boolean(input && input.value.trim().length > 0);
+      },
+      undefined,
+      { timeout: 15000 }
+    );
+
+    const businessName = await businessNameInput.inputValue();
+    const windowInput = await bookingWindowInput.inputValue();
     result.valuesLoaded = Boolean(businessName) && Boolean(windowInput);
 
-    await page.locator('input[type="text"]').first().fill(`Pies Sanos Venado ${suffix}`);
-    await page.locator('input[type="number"]').first().fill("90");
-    await page.locator('input[type="number"]').nth(1).fill("20");
-    await page.getByRole("button", { name: "Guardar configuracion" }).click();
+    await businessNameInput.fill(`Pies Sanos Venado ${suffix}`);
+    await bookingWindowInput.fill("90");
+    await appointmentGapInput.fill("20");
+    await page.getByRole("button", { name: "Guardar configuracion" }).click({ force: true });
     await page.waitForTimeout(1200);
 
-    const preview = page.locator("text=90 dias");
+    const preview = page.getByText("90 dias").first();
     await preview.waitFor({ timeout: 15000 });
     result.settingsSaved = true;
   } catch (error) {

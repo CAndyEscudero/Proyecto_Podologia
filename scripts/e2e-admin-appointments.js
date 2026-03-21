@@ -132,7 +132,7 @@ async function run() {
     result.appointmentCreated = true;
 
     await page.getByRole("button", { name: "Gestion de turnos" }).click();
-    await page.waitForSelector("text=Agenda y gestion de turnos", { timeout: 15000 });
+    await page.waitForSelector('[data-testid="appointments-filter-date-from"]', { timeout: 15000 });
     await page.getByTestId("appointments-filter-date-from").fill(scenario.date);
     await page.getByTestId("appointments-filter-date-to").fill(scenario.date);
     await Promise.all([

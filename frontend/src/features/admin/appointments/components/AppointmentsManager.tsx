@@ -4,6 +4,17 @@ import { useForm, type SubmitHandler, type UseFormReturn } from "react-hook-form
 import { zodResolver } from "@hookform/resolvers/zod";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
+import {
+  CalendarCheck2,
+  CalendarClock,
+  Clock3,
+  FilePenLine,
+  PhoneCall,
+  Stethoscope,
+  Trash2,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { getAvailableSlots } from "../../availability/api/availability.api";
 import { Button } from "../../../../shared/ui/button/Button";
 import type { AvailabilitySlot } from "../../../../shared/types/domain";
@@ -61,6 +72,7 @@ interface FieldProps {
 interface InfoRowProps {
   label: string;
   value: string;
+  icon: LucideIcon;
 }
 
 interface EmptyManagerStateProps {
@@ -321,15 +333,31 @@ export function AppointmentsManager({
   return (
     <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100 px-6 py-5">
+        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-brand-ink">{modeTitle[mode]}</h2>
-              <p className="mt-2 text-sm text-slate-600">{modeDescription}</p>
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
+                  {mode === "create" ? (
+                    <CalendarCheck2 className="h-5 w-5" />
+                  ) : mode === "edit" ? (
+                    <FilePenLine className="h-5 w-5" />
+                  ) : (
+                    <CalendarClock className="h-5 w-5" />
+                  )}
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
+                    Gestion puntual
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold text-brand-ink">{modeTitle[mode]}</h2>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{modeDescription}</p>
             </div>
 
             {visibleModes.length > 1 ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 rounded-[1.35rem] border border-rose-100 bg-white/85 p-2 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)]">
                 {visibleModes.includes("create") ? (
                   <Button type="button" variant={mode === "create" ? "primary" : "secondary"} className="min-h-10 px-4 text-xs" onClick={() => onModeChange("create")}>
                     Nuevo manual
@@ -394,19 +422,29 @@ export function AppointmentsManager({
         </div>
       </div>
 
-      <div className="card-surface px-6 py-5">
-        <h3 className="text-xl font-semibold text-brand-ink">Contexto del turno</h3>
+      <div className="card-surface overflow-hidden px-6 py-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine">
+            <UserRound className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-xl font-semibold text-brand-ink">Contexto del turno</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Resumen rapido para editar, reprogramar o confirmar datos sin perder el contexto.
+            </p>
+          </div>
+        </div>
         {selectedAppointment ? (
-          <div className="mt-4 space-y-4 text-sm text-slate-600">
-            <InfoRow label="Paciente" value={`${selectedAppointment.client.firstName} ${selectedAppointment.client.lastName}`} />
-            <InfoRow label="Servicio" value={selectedAppointment.service.name} />
-            <InfoRow label="Fecha" value={selectedAppointment.date} />
-            <InfoRow label="Horario" value={`${selectedAppointment.startTime} - ${selectedAppointment.endTime}`} />
-            <InfoRow label="Estado" value={statusLabels[selectedAppointment.status]} />
-            <InfoRow label="Telefono" value={selectedAppointment.client.phone} />
-            <InfoRow label="Email" value={selectedAppointment.client.email || "Sin email"} />
-            <InfoRow label="Notas cliente" value={selectedAppointment.client.notes || "Sin notas"} />
-            <InfoRow label="Notas turno" value={selectedAppointment.notes || "Sin observaciones"} />
+          <div className="mt-5 grid gap-3 text-sm text-slate-600">
+            <InfoRow label="Paciente" value={`${selectedAppointment.client.firstName} ${selectedAppointment.client.lastName}`} icon={UserRound} />
+            <InfoRow label="Servicio" value={selectedAppointment.service.name} icon={Stethoscope} />
+            <InfoRow label="Fecha" value={selectedAppointment.date} icon={CalendarCheck2} />
+            <InfoRow label="Horario" value={`${selectedAppointment.startTime} - ${selectedAppointment.endTime}`} icon={Clock3} />
+            <InfoRow label="Estado" value={statusLabels[selectedAppointment.status]} icon={FilePenLine} />
+            <InfoRow label="Telefono" value={selectedAppointment.client.phone} icon={PhoneCall} />
+            <InfoRow label="Email" value={selectedAppointment.client.email || "Sin email"} icon={FilePenLine} />
+            <InfoRow label="Notas cliente" value={selectedAppointment.client.notes || "Sin notas"} icon={FilePenLine} />
+            <InfoRow label="Notas turno" value={selectedAppointment.notes || "Sin observaciones"} icon={FilePenLine} />
           </div>
         ) : (
           <div className="mt-4 rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50/40 px-5 py-8 text-sm text-slate-500">
@@ -427,6 +465,10 @@ function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmit
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+      <div className="rounded-[1.5rem] border border-rose-100/80 bg-rose-50/55 px-4 py-4 text-sm text-slate-600">
+        Usa este formulario para cargar turnos de mostrador, telefono o WhatsApp sin salir del
+        flujo diario.
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Servicio" error={errors.serviceId?.message}>
           <select {...register("serviceId")} className="field-input">
@@ -490,6 +532,9 @@ function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSu
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+      <div className="rounded-[1.5rem] border border-rose-100/80 bg-rose-50/55 px-4 py-4 text-sm text-slate-600">
+        Ajusta los datos del paciente y el estado del turno sin perder visibilidad de la agenda.
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nombre" error={errors.firstName?.message}>
           <input type="text" {...register("firstName")} className="field-input" />
@@ -530,6 +575,7 @@ function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSu
           {isSubmitting ? "Guardando cambios..." : "Guardar cambios"}
         </Button>
         <Button type="button" variant="secondary" className="w-full" disabled={isDeleting} onClick={onDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
           {isDeleting ? "Eliminando..." : "Eliminar turno"}
         </Button>
       </div>
@@ -588,11 +634,14 @@ function EmptyManagerState({ message }: EmptyManagerStateProps) {
   );
 }
 
-function InfoRow({ label, value }: InfoRowProps) {
+function InfoRow({ label, value, icon: Icon }: InfoRowProps) {
   return (
-    <div>
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-wine">{label}</p>
-      <p className="mt-1 text-sm text-slate-600">{value}</p>
+    <div className="rounded-[1.25rem] border border-rose-100/80 bg-white px-4 py-4 shadow-[0_18px_45px_-40px_rgba(148,70,88,0.35)]">
+      <div className="flex items-center gap-2 text-brand-wine">
+        <Icon className="h-4 w-4" />
+        <p className="text-xs font-bold uppercase tracking-[0.18em]">{label}</p>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{value}</p>
     </div>
   );
 }

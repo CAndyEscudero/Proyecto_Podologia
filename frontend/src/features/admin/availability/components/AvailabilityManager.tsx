@@ -1,8 +1,9 @@
 import dayjs from "dayjs";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Ban, CalendarClock, Clock3, Coffee, PencilLine, Trash2 } from "lucide-react";
 import { Button } from "../../../../shared/ui/button/Button";
 import type {
   AvailabilityRule,
@@ -141,11 +142,31 @@ export function AvailabilityManager({
   return (
     <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100 px-6 py-5">
-          <h2 className="text-2xl font-semibold text-brand-ink">Disponibilidad semanal</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Define horarios laborales y pausas para que el calculo de slots respete la operativa real.
-          </p>
+        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
+                  <CalendarClock className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
+                    Agenda base
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Disponibilidad semanal</h2>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Define horarios laborales y pausas para que el calculo de slots respete la
+                operativa real sin sobrecargar al recepcionista.
+              </p>
+            </div>
+
+            <div className="grid min-w-[240px] gap-3 rounded-[1.5rem] border border-rose-100 bg-white/85 p-4 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)] sm:grid-cols-2">
+              <MetricPill label="Reglas" value={String(rules.length)} icon={<Clock3 className="h-4 w-4" />} />
+              <MetricPill label="Bloqueos" value={String(blockedDates.length)} icon={<Ban className="h-4 w-4" />} />
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-6 p-6 min-[1400px]:grid-cols-[minmax(0,1fr)_320px]">
@@ -158,12 +179,13 @@ export function AvailabilityManager({
               rules.map((rule) => (
                 <article
                   key={rule.id}
-                  className="flex flex-col gap-4 rounded-[1.5rem] border border-rose-100 px-5 py-4 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-4 rounded-[1.6rem] border border-rose-100/80 bg-white px-5 py-4 shadow-[0_18px_55px_-46px_rgba(148,70,88,0.45)] transition hover:bg-rose-50/45 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-brand-ink">{days[rule.dayOfWeek]}</p>
-                      <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-wine">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-wine">
+                        {rule.type === "BREAK" ? <Coffee className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}
                         {ruleLabels[rule.type]}
                       </span>
                     </div>
@@ -179,6 +201,7 @@ export function AvailabilityManager({
                       className="min-h-10 px-4 text-xs"
                       onClick={() => onEditRule(rule)}
                     >
+                      <PencilLine className="mr-2 h-4 w-4" />
                       Editar
                     </Button>
                     <Button
@@ -188,6 +211,7 @@ export function AvailabilityManager({
                       disabled={isDeletingRuleId === rule.id}
                       onClick={() => onDeleteRule(rule.id)}
                     >
+                      <Trash2 className="mr-2 h-4 w-4" />
                       {isDeletingRuleId === rule.id ? "Eliminando..." : "Eliminar"}
                     </Button>
                   </div>
@@ -196,7 +220,7 @@ export function AvailabilityManager({
             )}
           </div>
 
-          <div className="min-w-0 rounded-[1.75rem] border border-rose-100 bg-rose-50/40 p-5">
+          <div className="min-w-0 rounded-[1.85rem] border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,241,243,0.92))] p-5 shadow-[0_28px_80px_-54px_rgba(148,70,88,0.55)]">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.22em] text-brand-wine">
@@ -205,6 +229,10 @@ export function AvailabilityManager({
                 <h3 className="mt-2 text-xl font-semibold text-brand-ink">
                   {editingRule ? `${days[editingRule.dayOfWeek]} ${editingRule.startTime}` : "Carga una regla semanal"}
                 </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  El recepcionista deberia poder entender rapido que dias estan abiertos y donde
+                  hay pausas operativas.
+                </p>
               </div>
               {editingRule ? (
                 <button
@@ -263,9 +291,17 @@ export function AvailabilityManager({
       </div>
 
       <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100 px-6 py-5">
-          <h2 className="text-2xl font-semibold text-brand-ink">Fechas bloqueadas</h2>
-          <p className="mt-2 text-sm text-slate-600">
+        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
+              <Ban className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">Excepciones</p>
+              <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Fechas bloqueadas</h2>
+            </div>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
             Corta dias completos o franjas puntuales por feriados, capacitaciones o cierres.
           </p>
         </div>
@@ -273,7 +309,7 @@ export function AvailabilityManager({
         <div className="grid gap-6 p-6">
           <form
             onSubmit={handleSubmitBlockedDate(submitBlockedDate)}
-            className="rounded-[1.75rem] border border-rose-100 bg-rose-50/40 p-5"
+            className="rounded-[1.85rem] border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,241,243,0.92))] p-5 shadow-[0_28px_80px_-54px_rgba(148,70,88,0.55)]"
           >
             <div className="grid gap-4">
               <label className="block">
@@ -334,7 +370,7 @@ export function AvailabilityManager({
                 return (
                   <article
                     key={blockedDate.id}
-                    className="flex flex-col gap-4 rounded-[1.5rem] border border-rose-100 px-5 py-4 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col gap-4 rounded-[1.6rem] border border-rose-100/80 bg-white px-5 py-4 shadow-[0_18px_55px_-46px_rgba(148,70,88,0.45)] transition hover:bg-rose-50/45 md:flex-row md:items-center md:justify-between"
                   >
                     <div>
                       <p className="font-semibold text-brand-ink">{dateLabel}</p>
@@ -349,6 +385,7 @@ export function AvailabilityManager({
                       disabled={isDeletingBlockedDateId === blockedDate.id}
                       onClick={() => onDeleteBlockedDate(blockedDate.id)}
                     >
+                      <Trash2 className="mr-2 h-4 w-4" />
                       {isDeletingBlockedDateId === blockedDate.id ? "Eliminando..." : "Quitar bloqueo"}
                     </Button>
                   </article>
@@ -359,5 +396,23 @@ export function AvailabilityManager({
         </div>
       </div>
     </section>
+  );
+}
+
+interface MetricPillProps {
+  label: string;
+  value: string;
+  icon: ReactNode;
+}
+
+function MetricPill({ label, value, icon }: MetricPillProps) {
+  return (
+    <div className="rounded-[1.25rem] border border-rose-100/80 bg-rose-50/55 px-4 py-3">
+      <div className="flex items-center gap-2 text-brand-wine">
+        {icon}
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em]">{label}</p>
+      </div>
+      <p className="mt-2 text-lg font-semibold text-brand-ink">{value}</p>
+    </div>
   );
 }

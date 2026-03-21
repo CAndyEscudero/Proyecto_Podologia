@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom";
 import { services } from "../data/home-content";
 import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
+import { Button } from "../../../shared/ui/button/Button";
 
 export function ServicesSection() {
   return (
@@ -22,6 +24,12 @@ export function ServicesSection() {
                   </span>
                 </div>
                 <p className="text-sm leading-6 text-slate-600">{service.description}</p>
+                <Link
+                  to={`/reservas?service=${encodeURIComponent(service.name)}`}
+                  className="inline-flex"
+                >
+                  <Button className="w-full">Reservar este servicio</Button>
+                </Link>
               </div>
             </article>
           ))}

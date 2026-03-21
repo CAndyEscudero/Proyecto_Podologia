@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type SubmitHandler, useForm } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -68,6 +69,7 @@ function getApiMessage(error: unknown, fallbackMessage: string): string {
 export function BookingForm() {
   const [confirmation, setConfirmation] = useState<CreateAppointmentResponse | null>(null);
   const [step, setStep] = useState<BookingStep["id"]>(1);
+  const [searchParams] = useSearchParams();
 
   const {
     register,
@@ -122,6 +124,23 @@ export function BookingForm() {
       })),
     [services]
   );
+
+  useEffect(() => {
+    const requestedService = searchParams.get("service");
+
+    if (!requestedService || serviceId || services.length === 0) {
+      return;
+    }
+
+    const normalizedRequestedService = normalizeServiceName(requestedService);
+    const matchedService = services.find(
+      (service) => normalizeServiceName(service.name) === normalizedRequestedService
+    );
+
+    if (matchedService) {
+      handleServiceSelect(String(matchedService.id));
+    }
+  }, [searchParams, services, serviceId]);
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
@@ -705,4 +724,12 @@ function SummaryRow({ label, value }: BookingSummaryRowProps) {
       <span className="text-right text-slate-600">{value}</span>
     </div>
   );
+}
+
+function normalizeServiceName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }

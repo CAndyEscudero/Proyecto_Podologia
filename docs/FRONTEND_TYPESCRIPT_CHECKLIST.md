@@ -172,51 +172,51 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Booking
 
-- [ ] Crear `frontend/src/features/booking/api/booking.api.ts`.
-- [ ] Migrar llamadas públicas de servicios.
-- [ ] Migrar llamadas públicas de disponibilidad.
-- [ ] Migrar creación pública de turnos.
+- [x] Crear `frontend/src/features/booking/api/booking.api.ts`.
+- [x] Migrar llamadas públicas de servicios.
+- [x] Migrar llamadas públicas de disponibilidad.
+- [x] Migrar creación pública de turnos.
 
 ### Admin auth
 
-- [ ] Crear `frontend/src/features/admin/auth/api/auth.api.ts`.
-- [ ] Mover `login` y `getMe`.
+- [x] Crear `frontend/src/features/admin/auth/api/auth.api.ts`.
+- [x] Mover `login` y `getMe`.
 
 ### Admin appointments
 
-- [ ] Crear `frontend/src/features/admin/appointments/api/appointments.api.ts`.
-- [ ] Mover `getAppointments`.
-- [ ] Mover `createAppointment`.
-- [ ] Mover `updateAppointment`.
-- [ ] Mover `deleteAppointment`.
-- [ ] Mover `updateAppointmentStatus`.
-- [ ] Mover `rescheduleAppointment`.
+- [x] Crear `frontend/src/features/admin/appointments/api/appointments.api.ts`.
+- [x] Mover `getAppointments`.
+- [x] Mover `createAppointment`.
+- [x] Mover `updateAppointment`.
+- [x] Mover `deleteAppointment`.
+- [x] Mover `updateAppointmentStatus`.
+- [x] Mover `rescheduleAppointment`.
 
 ### Admin services
 
-- [ ] Crear `frontend/src/features/admin/services/api/services.api.ts`.
-- [ ] Mover `getServices`.
-- [ ] Mover `createService`.
-- [ ] Mover `updateService`.
-- [ ] Mover `deleteService`.
+- [x] Crear `frontend/src/features/admin/services/api/services.api.ts`.
+- [x] Mover `getServices`.
+- [x] Mover `createService`.
+- [x] Mover `updateService`.
+- [x] Mover `deleteService`.
 
 ### Admin availability
 
-- [ ] Crear `frontend/src/features/admin/availability/api/availability.api.ts`.
-- [ ] Mover `getAvailableSlots`.
-- [ ] Mover `getAvailabilityRules`.
-- [ ] Mover `createAvailabilityRule`.
-- [ ] Mover `updateAvailabilityRule`.
-- [ ] Mover `deleteAvailabilityRule`.
-- [ ] Mover `getBlockedDates`.
-- [ ] Mover `createBlockedDate`.
-- [ ] Mover `deleteBlockedDate`.
+- [x] Crear `frontend/src/features/admin/availability/api/availability.api.ts`.
+- [x] Mover `getAvailableSlots`.
+- [x] Mover `getAvailabilityRules`.
+- [x] Mover `createAvailabilityRule`.
+- [x] Mover `updateAvailabilityRule`.
+- [x] Mover `deleteAvailabilityRule`.
+- [x] Mover `getBlockedDates`.
+- [x] Mover `createBlockedDate`.
+- [x] Mover `deleteBlockedDate`.
 
 ### Admin business settings
 
-- [ ] Crear `frontend/src/features/admin/business-settings/api/business-settings.api.ts`.
-- [ ] Mover `getBusinessSettings`.
-- [ ] Mover `updateBusinessSettings`.
+- [x] Crear `frontend/src/features/admin/business-settings/api/business-settings.api.ts`.
+- [x] Mover `getBusinessSettings`.
+- [x] Mover `updateBusinessSettings`.
 
 ### Validacion de cierre
 

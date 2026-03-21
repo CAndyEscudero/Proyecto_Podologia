@@ -3,13 +3,14 @@ import type { CreateAppointmentResponse } from "../../../../shared/types/api";
 import type { Appointment } from "../../../../shared/types/domain";
 import type {
   AppointmentFilters,
+  AppointmentQueryParams,
   CreateAppointmentPayload,
   RescheduleAppointmentPayload,
   UpdateAppointmentPayload,
   UpdateAppointmentStatusPayload,
 } from "../types/appointments.types";
 
-export async function getAppointments(params: AppointmentFilters): Promise<Appointment[]> {
+export async function getAppointments(params: AppointmentFilters | AppointmentQueryParams): Promise<Appointment[]> {
   const { data } = await http.get<Appointment[]>("/appointments", { params });
   return data;
 }

@@ -2,46 +2,65 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { Menu } from "lucide-react";
+import type { AxiosError } from "axios";
 import { AdminSummary } from "../../features/admin/appointments/components/AdminSummary";
-import { AdminSidebar } from "../../features/admin/navigation/components/AdminSidebar";
-import { AppointmentsManager } from "../../components/admin/AppointmentsManager";
-import { AppointmentsTable } from "../../components/admin/AppointmentsTable";
-import { AvailabilityManager } from "../../features/admin/availability/components/AvailabilityManager";
-import { BusinessSettingsPanel } from "../../features/admin/business-settings/components/BusinessSettingsPanel";
-import { ServicesManager } from "../../features/admin/services/components/ServicesManager";
+import { AppointmentsManager } from "../../features/admin/appointments/components/AppointmentsManager";
+import { AppointmentsTable } from "../../features/admin/appointments/components/AppointmentsTable";
 import {
-  createAvailabilityRule,
   createAppointment,
-  createBlockedDate,
-  createService,
   deleteAppointment,
-  deleteAvailabilityRule,
-  deleteBlockedDate,
-  deleteService,
   getAppointments,
-  getAvailabilityRules,
-  getBlockedDates,
-  getBusinessSettings,
-  getMe,
-  getServices,
   rescheduleAppointment,
   updateAppointment,
   updateAppointmentStatus,
+} from "../../features/admin/appointments/api/appointments.api";
+import { AdminSidebar } from "../../features/admin/navigation/components/AdminSidebar";
+import {
+  createAvailabilityRule,
+  createBlockedDate,
+  deleteAvailabilityRule,
+  deleteBlockedDate,
+  getAvailabilityRules,
+  getBlockedDates,
   updateAvailabilityRule,
-  updateBusinessSettings,
-  updateService,
-} from "../../services/adminApi";
+} from "../../features/admin/availability/api/availability.api";
+import { AvailabilityManager } from "../../features/admin/availability/components/AvailabilityManager";
+import type {
+  CreateAvailabilityRulePayload,
+  CreateBlockedDatePayload,
+  UpdateAvailabilityRulePayload,
+} from "../../features/admin/availability/types/availability.types";
+import { getBusinessSettings, updateBusinessSettings } from "../../features/admin/business-settings/api/business-settings.api";
+import { BusinessSettingsPanel } from "../../features/admin/business-settings/components/BusinessSettingsPanel";
+import type { UpdateBusinessSettingsPayload } from "../../features/admin/business-settings/types/business-settings.types";
+import { getMe } from "../../features/admin/auth/api/auth.api";
+import { createService, deleteService, getServices, updateService } from "../../features/admin/services/api/services.api";
+import { ServicesManager } from "../../features/admin/services/components/ServicesManager";
+import type {
+  AppointmentFilters,
+  AppointmentManagerMode,
+  AppointmentStatus,
+  CreateAppointmentPayload,
+  DashboardNavigationItem,
+  DashboardTab,
+  DashboardSummaryItem,
+  RescheduleAppointmentPayload,
+  UpdateAppointmentPayload,
+} from "../../features/admin/appointments/types/appointments.types";
+import type { Service, AvailabilityRule, BlockedDate, BusinessSettings, Appointment, User } from "../../shared/types/domain";
+import type { CreateServicePayload, UpdateServicePayload } from "../../features/admin/services/types/services.types";
+import type { ApiErrorResponse } from "../../shared/types/api";
 
 export function AdminDashboardPage() {
-  const [user, setUser] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [services, setServices] = useState([]);
-  const [rules, setRules] = useState([]);
-  const [blockedDates, setBlockedDates] = useState([]);
-  const [businessSettings, setBusinessSettings] = useState(null);
-  const [activeTab, setActiveTab] = useState("appointmentCreate");
+  const [, setUser] = useState<User | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [rules, setRules] = useState<AvailabilityRule[]>([]);
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
+  const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
+  const [activeTab, setActiveTab] = useState<DashboardTab>("appointmentCreate");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<AppointmentFilters>({
     dateFrom: dayjs().format("YYYY-MM-DD"),
     dateTo: dayjs().add(6, "day").format("YYYY-MM-DD"),
     status: "",
@@ -49,19 +68,19 @@ export function AdminDashboardPage() {
     serviceId: "",
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [isUpdatingId, setIsUpdatingId] = useState(null);
-  const [appointmentMode, setAppointmentMode] = useState("edit");
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isUpdatingId, setIsUpdatingId] = useState<number | null>(null);
+  const [appointmentMode, setAppointmentMode] = useState<AppointmentManagerMode>("edit");
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isSavingAppointment, setIsSavingAppointment] = useState(false);
-  const [isDeletingAppointmentId, setIsDeletingAppointmentId] = useState(null);
+  const [isDeletingAppointmentId, setIsDeletingAppointmentId] = useState<number | null>(null);
   const [isSavingService, setIsSavingService] = useState(false);
-  const [isDeletingServiceId, setIsDeletingServiceId] = useState(null);
-  const [editingService, setEditingService] = useState(null);
+  const [isDeletingServiceId, setIsDeletingServiceId] = useState<number | null>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const [isSavingRule, setIsSavingRule] = useState(false);
-  const [isDeletingRuleId, setIsDeletingRuleId] = useState(null);
-  const [editingRule, setEditingRule] = useState(null);
+  const [isDeletingRuleId, setIsDeletingRuleId] = useState<number | null>(null);
+  const [editingRule, setEditingRule] = useState<AvailabilityRule | null>(null);
   const [isSavingBlockedDate, setIsSavingBlockedDate] = useState(false);
-  const [isDeletingBlockedDateId, setIsDeletingBlockedDateId] = useState(null);
+  const [isDeletingBlockedDateId, setIsDeletingBlockedDateId] = useState<number | null>(null);
   const [isSavingBusinessSettings, setIsSavingBusinessSettings] = useState(false);
 
   useEffect(() => {
@@ -89,11 +108,11 @@ export function AdminDashboardPage() {
         setBusinessSettings(businessSettingsResponse);
         setAppointments(appointmentsResponse);
       } catch (error) {
-        toast.error(error?.response?.data?.message || "No se pudo cargar el contexto del panel");
+        toast.error(getErrorMessage(error, "No se pudo cargar el contexto del panel"));
       }
     }
 
-    bootstrap();
+    void bootstrap();
   }, []);
 
   useEffect(() => {
@@ -102,11 +121,11 @@ export function AdminDashboardPage() {
     }
 
     if (activeTab === "appointmentManage") {
-      fetchAppointments();
+      void fetchAppointments();
     }
   }, [filters, activeTab]);
 
-  async function loadAppointments(activeFilters = filters) {
+  async function loadAppointments(activeFilters: AppointmentFilters = filters) {
     try {
       setIsLoading(true);
       const data = await getAppointments(buildAppointmentsParams(activeFilters));
@@ -118,13 +137,13 @@ export function AdminDashboardPage() {
         }
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudieron cargar los turnos");
+      toast.error(getErrorMessage(error, "No se pudieron cargar los turnos"));
     } finally {
       setIsLoading(false);
     }
   }
 
-  const summaryItems = useMemo(() => {
+  const summaryItems = useMemo<DashboardSummaryItem[]>(() => {
     const today = dayjs().format("YYYY-MM-DD");
     const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
     const todayAppointments = appointments.filter((appointment) => appointment.date === today);
@@ -138,7 +157,7 @@ export function AdminDashboardPage() {
         : 1;
     const occupancyAverage = appointments.length ? (appointments.length / totalDays).toFixed(1) : "0.0";
     const topServiceEntry = Object.entries(
-      appointments.reduce((accumulator, appointment) => {
+      appointments.reduce<Record<string, number>>((accumulator, appointment) => {
         accumulator[appointment.service.name] = (accumulator[appointment.service.name] || 0) + 1;
         return accumulator;
       }, {})
@@ -181,7 +200,7 @@ export function AdminDashboardPage() {
         label: "Proximo turno",
         value: upcomingAppointment ? upcomingAppointment.startTime : "--:--",
         copy: upcomingAppointment
-          ? `${upcomingAppointment.client.firstName} ${upcomingAppointment.client.lastName} · ${dayjs(
+          ? `${upcomingAppointment.client.firstName} ${upcomingAppointment.client.lastName} - ${dayjs(
               upcomingAppointment.date
             ).format("DD/MM")}`
           : "No hay turnos futuros en vista",
@@ -199,7 +218,7 @@ export function AdminDashboardPage() {
     ];
   }, [appointments, blockedDates.length, filters.dateFrom, filters.dateTo, rules.length, services.length]);
 
-  const navigationItems = useMemo(
+  const navigationItems = useMemo<DashboardNavigationItem[]>(
     () => [
       {
         id: "appointments",
@@ -239,7 +258,7 @@ export function AdminDashboardPage() {
       (item) => item.id === activeTab || item.children?.some((child) => child.id === activeTab)
     ) || navigationItems[0];
 
-  async function handleStatusChange(id, status) {
+  async function handleStatusChange(id: number, status: AppointmentStatus) {
     try {
       setIsUpdatingId(id);
       await updateAppointmentStatus(id, status);
@@ -250,13 +269,13 @@ export function AdminDashboardPage() {
       );
       toast.success("Estado actualizado");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo actualizar el estado del turno");
+      toast.error(getErrorMessage(error, "No se pudo actualizar el estado del turno"));
     } finally {
       setIsUpdatingId(null);
     }
   }
 
-  async function handleCreateAppointment(payload, onSuccess) {
+  async function handleCreateAppointment(payload: CreateAppointmentPayload, onSuccess?: () => void) {
     try {
       setIsSavingAppointment(true);
       const response = await createAppointment(payload);
@@ -266,13 +285,13 @@ export function AdminDashboardPage() {
       onSuccess?.();
       await loadAppointments(filters);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo crear el turno");
+      toast.error(getErrorMessage(error, "No se pudo crear el turno"));
     } finally {
       setIsSavingAppointment(false);
     }
   }
 
-  async function handleUpdateAppointment(id, payload) {
+  async function handleUpdateAppointment(id: number, payload: UpdateAppointmentPayload) {
     try {
       setIsSavingAppointment(true);
       const updated = await updateAppointment(id, payload);
@@ -280,13 +299,13 @@ export function AdminDashboardPage() {
       toast.success("Turno actualizado");
       await loadAppointments(filters);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo actualizar el turno");
+      toast.error(getErrorMessage(error, "No se pudo actualizar el turno"));
     } finally {
       setIsSavingAppointment(false);
     }
   }
 
-  async function handleRescheduleAppointment(id, payload) {
+  async function handleRescheduleAppointment(id: number, payload: RescheduleAppointmentPayload) {
     try {
       setIsSavingAppointment(true);
       const updated = await rescheduleAppointment(id, payload);
@@ -294,13 +313,13 @@ export function AdminDashboardPage() {
       toast.success("Turno reprogramado");
       await loadAppointments(filters);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo reprogramar el turno");
+      toast.error(getErrorMessage(error, "No se pudo reprogramar el turno"));
     } finally {
       setIsSavingAppointment(false);
     }
   }
 
-  async function handleDeleteAppointment(id) {
+  async function handleDeleteAppointment(id: number) {
     try {
       setIsDeletingAppointmentId(id);
       await deleteAppointment(id);
@@ -311,13 +330,13 @@ export function AdminDashboardPage() {
       toast.success("Turno eliminado");
       await loadAppointments(filters);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo eliminar el turno");
+      toast.error(getErrorMessage(error, "No se pudo eliminar el turno"));
     } finally {
       setIsDeletingAppointmentId(null);
     }
   }
 
-  async function handleCreateService(payload, onSuccess) {
+  async function handleCreateService(payload: CreateServicePayload, onSuccess?: () => void) {
     try {
       setIsSavingService(true);
       const created = await createService(payload);
@@ -325,13 +344,13 @@ export function AdminDashboardPage() {
       toast.success("Servicio creado");
       onSuccess?.();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo crear el servicio");
+      toast.error(getErrorMessage(error, "No se pudo crear el servicio"));
     } finally {
       setIsSavingService(false);
     }
   }
 
-  async function handleUpdateService(id, payload, onSuccess) {
+  async function handleUpdateService(id: number, payload: UpdateServicePayload, onSuccess?: () => void) {
     try {
       setIsSavingService(true);
       const updated = await updateService(id, payload);
@@ -344,13 +363,13 @@ export function AdminDashboardPage() {
       toast.success("Servicio actualizado");
       onSuccess?.();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo actualizar el servicio");
+      toast.error(getErrorMessage(error, "No se pudo actualizar el servicio"));
     } finally {
       setIsSavingService(false);
     }
   }
 
-  async function handleDeleteService(id) {
+  async function handleDeleteService(id: number) {
     try {
       setIsDeletingServiceId(id);
       await deleteService(id);
@@ -360,13 +379,13 @@ export function AdminDashboardPage() {
       }
       toast.success("Servicio desactivado");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo desactivar el servicio");
+      toast.error(getErrorMessage(error, "No se pudo desactivar el servicio"));
     } finally {
       setIsDeletingServiceId(null);
     }
   }
 
-  async function handleCreateRule(payload, onSuccess) {
+  async function handleCreateRule(payload: CreateAvailabilityRulePayload, onSuccess?: () => void) {
     try {
       setIsSavingRule(true);
       const created = await createAvailabilityRule(payload);
@@ -376,13 +395,13 @@ export function AdminDashboardPage() {
       toast.success("Regla horaria creada");
       onSuccess?.();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo crear la regla");
+      toast.error(getErrorMessage(error, "No se pudo crear la regla"));
     } finally {
       setIsSavingRule(false);
     }
   }
 
-  async function handleUpdateRule(id, payload, onSuccess) {
+  async function handleUpdateRule(id: number, payload: UpdateAvailabilityRulePayload, onSuccess?: () => void) {
     try {
       setIsSavingRule(true);
       const updated = await updateAvailabilityRule(id, payload);
@@ -395,13 +414,13 @@ export function AdminDashboardPage() {
       toast.success("Regla actualizada");
       onSuccess?.();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo actualizar la regla");
+      toast.error(getErrorMessage(error, "No se pudo actualizar la regla"));
     } finally {
       setIsSavingRule(false);
     }
   }
 
-  async function handleDeleteRule(id) {
+  async function handleDeleteRule(id: number) {
     try {
       setIsDeletingRuleId(id);
       await deleteAvailabilityRule(id);
@@ -411,13 +430,13 @@ export function AdminDashboardPage() {
       }
       toast.success("Regla eliminada");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo eliminar la regla");
+      toast.error(getErrorMessage(error, "No se pudo eliminar la regla"));
     } finally {
       setIsDeletingRuleId(null);
     }
   }
 
-  async function handleCreateBlockedDate(payload, onSuccess) {
+  async function handleCreateBlockedDate(payload: CreateBlockedDatePayload, onSuccess?: () => void) {
     try {
       setIsSavingBlockedDate(true);
       const created = await createBlockedDate(payload);
@@ -427,41 +446,42 @@ export function AdminDashboardPage() {
       toast.success("Bloqueo cargado");
       onSuccess?.();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo bloquear la fecha");
+      toast.error(getErrorMessage(error, "No se pudo bloquear la fecha"));
     } finally {
       setIsSavingBlockedDate(false);
     }
   }
 
-  async function handleDeleteBlockedDate(id) {
+  async function handleDeleteBlockedDate(id: number) {
     try {
       setIsDeletingBlockedDateId(id);
       await deleteBlockedDate(id);
       setBlockedDates((current) => current.filter((blockedDate) => blockedDate.id !== id));
       toast.success("Bloqueo eliminado");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo eliminar el bloqueo");
+      toast.error(getErrorMessage(error, "No se pudo eliminar el bloqueo"));
     } finally {
       setIsDeletingBlockedDateId(null);
     }
   }
 
-  async function handleUpdateBusinessSettings(payload) {
+  async function handleUpdateBusinessSettings(payload: UpdateBusinessSettingsPayload) {
     try {
       setIsSavingBusinessSettings(true);
       const updated = await updateBusinessSettings(payload);
       setBusinessSettings(updated);
       toast.success("Configuracion actualizada");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No se pudo actualizar la configuracion");
+      toast.error(getErrorMessage(error, "No se pudo actualizar la configuracion"));
     } finally {
       setIsSavingBusinessSettings(false);
     }
   }
 
-  function handleSidebarChange(nextTab) {
-    setActiveTab(nextTab);
-    if (nextTab === "appointmentManage") {
+  function handleSidebarChange(nextTab: string) {
+    const typedNextTab = nextTab as DashboardTab;
+    setActiveTab(typedNextTab);
+    if (typedNextTab === "appointmentManage") {
       setAppointmentMode("edit");
     }
   }
@@ -630,7 +650,7 @@ export function AdminDashboardPage() {
   );
 }
 
-function buildAppointmentsParams(filters) {
+function buildAppointmentsParams(filters: AppointmentFilters) {
   return {
     dateFrom: filters.dateFrom || undefined,
     dateTo: filters.dateTo || undefined,
@@ -638,4 +658,9 @@ function buildAppointmentsParams(filters) {
     client: filters.client || undefined,
     serviceId: filters.serviceId || undefined,
   };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as AxiosError<ApiErrorResponse>;
+  return apiError.response?.data?.message || fallback;
 }

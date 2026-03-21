@@ -1,17 +1,26 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
-import { getAvailableSlots } from "../../services/adminApi";
-import { Button } from "../../shared/ui/button/Button";
+import { getAvailableSlots } from "../../availability/api/availability.api";
+import { Button } from "../../../../shared/ui/button/Button";
+import type { AvailabilitySlot } from "../../../../shared/types/domain";
+import type {
+  Appointment,
+  AppointmentCreateFormValues,
+  AppointmentEditFormValues,
+  AppointmentManagerMode,
+  AppointmentRescheduleFormValues,
+  AppointmentsManagerProps,
+} from "../types/appointments.types";
 
 const personNameRegex = /^[A-Za-zÀ-ÿ' -]{2,80}$/;
 const phoneRegex = /^[0-9+() -]{8,20}$/;
 
-const createSchema = z.object({
-  serviceId: z.coerce.number().int().min(1, "Selecciona un servicio"),
+const createSchema: z.ZodType<AppointmentCreateFormValues> = z.object({
+  serviceId: z.union([z.coerce.number().int().min(1, "Selecciona un servicio"), z.literal("")]),
   date: z.string().min(1, "Selecciona una fecha"),
   startTime: z.string().min(1, "Selecciona un horario"),
   firstName: z.string().trim().regex(personNameRegex, "Ingresa un nombre valido"),
@@ -21,7 +30,7 @@ const createSchema = z.object({
   clientNotes: z.string().trim().max(1000, "Maximo 1000 caracteres").optional(),
 });
 
-const editSchema = z.object({
+const editSchema: z.ZodType<AppointmentEditFormValues> = z.object({
   status: z.enum(["PENDING", "CONFIRMED", "CANCELED", "COMPLETED"]),
   firstName: z.string().trim().regex(personNameRegex, "Ingresa un nombre valido"),
   lastName: z.string().trim().regex(personNameRegex, "Ingresa un apellido valido"),
@@ -31,7 +40,7 @@ const editSchema = z.object({
   appointmentNotes: z.string().trim().max(1000, "Maximo 1000 caracteres").optional(),
 });
 
-const rescheduleSchema = z.object({
+const rescheduleSchema: z.ZodType<AppointmentRescheduleFormValues> = z.object({
   date: z.string().min(1, "Selecciona una fecha"),
   startTime: z.string().min(1, "Selecciona un horario"),
 });
@@ -41,7 +50,49 @@ const statusLabels = {
   CONFIRMED: "Confirmado",
   CANCELED: "Cancelado",
   COMPLETED: "Realizado",
-};
+} as const;
+
+interface FieldProps {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}
+
+interface InfoRowProps {
+  label: string;
+  value: string;
+}
+
+interface EmptyManagerStateProps {
+  message: string;
+}
+
+interface AppointmentCreateFormProps {
+  form: UseFormReturn<AppointmentCreateFormValues>;
+  services: AppointmentsManagerProps["services"];
+  slots: AvailabilitySlot[];
+  isLoadingSlots: boolean;
+  isSubmitting: boolean;
+  onSubmit: SubmitHandler<AppointmentCreateFormValues>;
+}
+
+interface AppointmentEditFormProps {
+  form: UseFormReturn<AppointmentEditFormValues>;
+  appointment: Appointment;
+  isSubmitting: boolean;
+  isDeleting: boolean;
+  onSubmit: SubmitHandler<AppointmentEditFormValues>;
+  onDelete: () => void;
+}
+
+interface AppointmentRescheduleFormProps {
+  form: UseFormReturn<AppointmentRescheduleFormValues>;
+  appointment: Appointment;
+  slots: AvailabilitySlot[];
+  isLoadingSlots: boolean;
+  isSubmitting: boolean;
+  onSubmit: SubmitHandler<AppointmentRescheduleFormValues>;
+}
 
 export function AppointmentsManager({
   services,
@@ -55,13 +106,13 @@ export function AppointmentsManager({
   isSubmitting,
   isDeletingId,
   availableModes = ["create", "edit", "reschedule"],
-}) {
-  const [createSlots, setCreateSlots] = useState([]);
-  const [rescheduleSlots, setRescheduleSlots] = useState([]);
+}: AppointmentsManagerProps) {
+  const [createSlots, setCreateSlots] = useState<AvailabilitySlot[]>([]);
+  const [rescheduleSlots, setRescheduleSlots] = useState<AvailabilitySlot[]>([]);
   const [isLoadingCreateSlots, setIsLoadingCreateSlots] = useState(false);
   const [isLoadingRescheduleSlots, setIsLoadingRescheduleSlots] = useState(false);
 
-  const createForm = useForm({
+  const createForm = useForm<AppointmentCreateFormValues>({
     resolver: zodResolver(createSchema),
     defaultValues: {
       serviceId: services[0]?.id ?? "",
@@ -75,7 +126,7 @@ export function AppointmentsManager({
     },
   });
 
-  const editForm = useForm({
+  const editForm = useForm<AppointmentEditFormValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
       status: "PENDING",
@@ -88,7 +139,7 @@ export function AppointmentsManager({
     },
   });
 
-  const rescheduleForm = useForm({
+  const rescheduleForm = useForm<AppointmentRescheduleFormValues>({
     resolver: zodResolver(rescheduleSchema),
     defaultValues: {
       date: "",
@@ -100,8 +151,8 @@ export function AppointmentsManager({
   const watchedCreateDate = createForm.watch("date");
   const watchedRescheduleDate = rescheduleForm.watch("date");
 
-  const visibleModes = useMemo(
-    () => availableModes.filter((value) => ["create", "edit", "reschedule"].includes(value)),
+  const visibleModes = useMemo<AppointmentManagerMode[]>(
+    () => availableModes.filter((value): value is AppointmentManagerMode => ["create", "edit", "reschedule"].includes(value)),
     [availableModes]
   );
 
@@ -154,17 +205,17 @@ export function AppointmentsManager({
         createForm.setValue("startTime", "");
         const response = await getAvailableSlots(watchedCreateServiceId, watchedCreateDate);
         setCreateSlots(response.slots);
-      } catch (error) {
+      } catch {
         setCreateSlots([]);
         createForm.setValue("startTime", "");
-        toast.error(error?.response?.data?.message || "No se pudo cargar la disponibilidad");
+        toast.error("No se pudo cargar la disponibilidad");
       } finally {
         setIsLoadingCreateSlots(false);
       }
     }
 
     if (visibleModes.includes("create")) {
-      loadCreateSlots();
+      void loadCreateSlots();
     }
   }, [watchedCreateDate, watchedCreateServiceId, createForm, visibleModes]);
 
@@ -180,21 +231,25 @@ export function AppointmentsManager({
         rescheduleForm.setValue("startTime", "");
         const response = await getAvailableSlots(selectedAppointment.serviceId, watchedRescheduleDate);
         setRescheduleSlots(response.slots);
-      } catch (error) {
+      } catch {
         setRescheduleSlots([]);
         rescheduleForm.setValue("startTime", "");
-        toast.error(error?.response?.data?.message || "No se pudo cargar la disponibilidad");
+        toast.error("No se pudo cargar la disponibilidad");
       } finally {
         setIsLoadingRescheduleSlots(false);
       }
     }
 
     if (visibleModes.includes("reschedule")) {
-      loadRescheduleSlots();
+      void loadRescheduleSlots();
     }
   }, [selectedAppointment, watchedRescheduleDate, rescheduleForm, visibleModes]);
 
-  async function handleCreateSubmit(values) {
+  const handleCreateSubmit: SubmitHandler<AppointmentCreateFormValues> = async (values) => {
+    if (!values.serviceId) {
+      return;
+    }
+
     await onCreate(
       {
         serviceId: Number(values.serviceId),
@@ -222,9 +277,9 @@ export function AppointmentsManager({
         setCreateSlots([]);
       }
     );
-  }
+  };
 
-  async function handleEditSubmit(values) {
+  const handleEditSubmit: SubmitHandler<AppointmentEditFormValues> = async (values) => {
     if (!selectedAppointment) {
       return;
     }
@@ -240,17 +295,17 @@ export function AppointmentsManager({
         notes: values.clientNotes || "",
       },
     });
-  }
+  };
 
-  async function handleRescheduleSubmit(values) {
+  const handleRescheduleSubmit: SubmitHandler<AppointmentRescheduleFormValues> = async (values) => {
     if (!selectedAppointment) {
       return;
     }
 
     await onReschedule(selectedAppointment.id, values);
-  }
+  };
 
-  const modeTitle = {
+  const modeTitle: Record<AppointmentManagerMode, string> = {
     create: "Alta manual de turnos",
     edit: "Editar datos del turno",
     reschedule: "Reprogramar turno",
@@ -260,7 +315,7 @@ export function AppointmentsManager({
     mode === "create"
       ? "Carga turnos manualmente para pacientes que reservan por telefono, WhatsApp o mostrador."
       : selectedAppointment
-        ? `Turno #${selectedAppointment.id} · ${selectedAppointment.client.firstName} ${selectedAppointment.client.lastName}`
+        ? `Turno #${selectedAppointment.id} - ${selectedAppointment.client.firstName} ${selectedAppointment.client.lastName}`
         : "Selecciona un turno desde gestion para continuar.";
 
   return (
@@ -276,34 +331,17 @@ export function AppointmentsManager({
             {visibleModes.length > 1 ? (
               <div className="flex flex-wrap gap-2">
                 {visibleModes.includes("create") ? (
-                  <Button
-                    type="button"
-                    variant={mode === "create" ? "primary" : "secondary"}
-                    className="min-h-10 px-4 text-xs"
-                    onClick={() => onModeChange("create")}
-                  >
+                  <Button type="button" variant={mode === "create" ? "primary" : "secondary"} className="min-h-10 px-4 text-xs" onClick={() => onModeChange("create")}>
                     Nuevo manual
                   </Button>
                 ) : null}
                 {visibleModes.includes("edit") ? (
-                  <Button
-                    type="button"
-                    variant={mode === "edit" ? "primary" : "secondary"}
-                    className="min-h-10 px-4 text-xs"
-                    disabled={!selectedAppointment}
-                    onClick={() => onModeChange("edit")}
-                  >
+                  <Button type="button" variant={mode === "edit" ? "primary" : "secondary"} className="min-h-10 px-4 text-xs" disabled={!selectedAppointment} onClick={() => onModeChange("edit")}>
                     Editar
                   </Button>
                 ) : null}
                 {visibleModes.includes("reschedule") ? (
-                  <Button
-                    type="button"
-                    variant={mode === "reschedule" ? "primary" : "secondary"}
-                    className="min-h-10 px-4 text-xs"
-                    disabled={!selectedAppointment}
-                    onClick={() => onModeChange("reschedule")}
-                  >
+                  <Button type="button" variant={mode === "reschedule" ? "primary" : "secondary"} className="min-h-10 px-4 text-xs" disabled={!selectedAppointment} onClick={() => onModeChange("reschedule")}>
                     Reprogramar
                   </Button>
                 ) : null}
@@ -380,7 +418,7 @@ export function AppointmentsManager({
   );
 }
 
-function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmitting, onSubmit }) {
+function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmitting, onSubmit }: AppointmentCreateFormProps) {
   const {
     register,
     handleSubmit,
@@ -443,7 +481,7 @@ function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmit
   );
 }
 
-function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSubmit, onDelete }) {
+function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSubmit, onDelete }: AppointmentEditFormProps) {
   const {
     register,
     handleSubmit,
@@ -499,7 +537,7 @@ function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSu
   );
 }
 
-function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, isSubmitting, onSubmit }) {
+function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, isSubmitting, onSubmit }: AppointmentRescheduleFormProps) {
   const {
     register,
     handleSubmit,
@@ -510,7 +548,7 @@ function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, i
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
       <div className="rounded-[1.5rem] border border-rose-100 bg-rose-50/40 px-4 py-4 text-sm text-slate-600">
         <p>
-          <strong className="text-brand-ink">Turno actual:</strong> {appointment.date} · {appointment.startTime} - {appointment.endTime}
+          <strong className="text-brand-ink">Turno actual:</strong> {appointment.date} - {appointment.startTime} - {appointment.endTime}
         </p>
         <p className="mt-1">
           <strong className="text-brand-ink">Servicio:</strong> {appointment.service.name}
@@ -542,7 +580,7 @@ function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, i
   );
 }
 
-function EmptyManagerState({ message }) {
+function EmptyManagerState({ message }: EmptyManagerStateProps) {
   return (
     <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50/40 px-5 py-8 text-sm text-slate-500">
       {message}
@@ -550,7 +588,7 @@ function EmptyManagerState({ message }) {
   );
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value }: InfoRowProps) {
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-wine">{label}</p>
@@ -559,7 +597,7 @@ function InfoRow({ label, value }) {
   );
 }
 
-function Field({ label, error, children }) {
+function Field({ label, error, children }: FieldProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-brand-ink">{label}</span>

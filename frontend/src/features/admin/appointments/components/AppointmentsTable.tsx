@@ -1,16 +1,22 @@
+import { useMemo, useState } from "react";
 import clsx from "clsx";
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
-import { Button } from "../../shared/ui/button/Button";
+import { Button } from "../../../../shared/ui/button/Button";
+import type {
+  Appointment,
+  AppointmentStatus,
+  AppointmentsTableProps,
+  AppointmentTableView,
+} from "../types/appointments.types";
 
-const statusOptions = [
+const statusOptions: ReadonlyArray<{ label: string; value: AppointmentStatus }> = [
   { label: "Pendiente", value: "PENDING" },
   { label: "Confirmado", value: "CONFIRMED" },
   { label: "Cancelado", value: "CANCELED" },
   { label: "Realizado", value: "COMPLETED" },
 ];
 
-const statusStyles = {
+const statusStyles: Record<AppointmentStatus, string> = {
   PENDING: "bg-amber-50 text-amber-700 border-amber-100",
   CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-100",
   CANCELED: "bg-rose-50 text-rose-700 border-rose-100",
@@ -21,7 +27,21 @@ const agendaBlocks = [
   { id: "morning", label: "Manana", min: 0, max: 12 },
   { id: "afternoon", label: "Tarde", min: 12, max: 17 },
   { id: "late", label: "Ultimos turnos", min: 17, max: 24 },
-];
+] as const;
+
+interface SummaryPillProps {
+  label: string;
+  value: number;
+  tone: string;
+}
+
+interface AgendaBlock {
+  id: (typeof agendaBlocks)[number]["id"];
+  label: string;
+  min: number;
+  max: number;
+  items: Appointment[];
+}
 
 export function AppointmentsTable({
   appointments,
@@ -36,28 +56,31 @@ export function AppointmentsTable({
   isUpdatingId,
   isDeletingId,
   selectedAppointmentId,
-}) {
-  const [view, setView] = useState("timeline");
+}: AppointmentsTableProps) {
+  const [view, setView] = useState<AppointmentTableView>("timeline");
 
-  const summary = useMemo(() => {
-    return {
+  const summary = useMemo(
+    () => ({
       total: appointments.length,
       pending: appointments.filter((appointment) => appointment.status === "PENDING").length,
       confirmed: appointments.filter((appointment) => appointment.status === "CONFIRMED").length,
       completed: appointments.filter((appointment) => appointment.status === "COMPLETED").length,
       canceled: appointments.filter((appointment) => appointment.status === "CANCELED").length,
-    };
-  }, [appointments]);
+    }),
+    [appointments]
+  );
 
-  const groupedAppointments = useMemo(() => {
-    return agendaBlocks.map((block) => ({
-      ...block,
-      items: appointments.filter((appointment) => {
-        const hour = Number(appointment.startTime.split(":")[0]);
-        return hour >= block.min && hour < block.max;
-      }),
-    }));
-  }, [appointments]);
+  const groupedAppointments = useMemo<AgendaBlock[]>(
+    () =>
+      agendaBlocks.map((block) => ({
+        ...block,
+        items: appointments.filter((appointment) => {
+          const hour = Number(appointment.startTime.split(":")[0]);
+          return hour >= block.min && hour < block.max;
+        }),
+      })),
+    [appointments]
+  );
 
   const quickDateActions = [
     {
@@ -86,16 +109,19 @@ export function AppointmentsTable({
     },
   ];
 
-  const serviceSummary = useMemo(() => {
-    const counts = appointments.reduce((accumulator, appointment) => {
-      accumulator[appointment.service.name] = (accumulator[appointment.service.name] || 0) + 1;
-      return accumulator;
-    }, {});
+  const serviceSummary = useMemo<[string, number][]>(
+    () => {
+      const counts = appointments.reduce<Record<string, number>>((accumulator, appointment) => {
+        accumulator[appointment.service.name] = (accumulator[appointment.service.name] || 0) + 1;
+        return accumulator;
+      }, {});
 
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-  }, [appointments]);
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+    },
+    [appointments]
+  );
 
   return (
     <div className="card-surface overflow-hidden">
@@ -116,7 +142,7 @@ export function AppointmentsTable({
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setView(option.id)}
+                onClick={() => setView(option.id as AppointmentTableView)}
                 className={clsx(
                   "rounded-full px-4 py-2 text-xs font-bold transition",
                   view === option.id ? "bg-brand-wine text-white" : "text-slate-500 hover:text-brand-wine"
@@ -157,7 +183,12 @@ export function AppointmentsTable({
           <select
             data-testid="appointments-filter-status"
             value={filters.status}
-            onChange={(event) => onFiltersChange({ ...filters, status: event.target.value })}
+            onChange={(event) =>
+              onFiltersChange({
+                ...filters,
+                status: (event.target.value as AppointmentStatus | "") || "",
+              })
+            }
             className="field-input"
           >
             <option value="">Todos</option>
@@ -243,19 +274,19 @@ export function AppointmentsTable({
         <div className="rounded-[1.4rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Rango activo</p>
           <p className="mt-3 text-sm font-semibold text-brand-ink">
-            {filters.dateFrom ? dayjs(filters.dateFrom).format("DD/MM/YYYY") : "Sin inicio"}{" "}
-            {" - "}
+            {filters.dateFrom ? dayjs(filters.dateFrom).format("DD/MM/YYYY") : "Sin inicio"} -{" "}
             {filters.dateTo ? dayjs(filters.dateTo).format("DD/MM/YYYY") : "Sin fin"}
           </p>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            {filters.serviceId ? "Filtrado por servicio especifico." : "Incluye todos los servicios activos."}
-            {" "}
+            {filters.serviceId ? "Filtrado por servicio especifico." : "Incluye todos los servicios activos."}{" "}
             {filters.status ? `Estado: ${translateStatus(filters.status)}.` : "Sin restriccion por estado."}
           </p>
         </div>
 
         <div className="rounded-[1.4rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Servicios con mas movimiento</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+            Servicios con mas movimiento
+          </p>
           <div className="mt-3 space-y-2 text-sm text-slate-600">
             {serviceSummary.length ? (
               serviceSummary.map(([serviceName, count]) => (
@@ -319,7 +350,7 @@ export function AppointmentsTable({
                         <span
                           className={clsx(
                             "inline-flex rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide",
-                            statusStyles[appointment.status] || "bg-rose-50 text-brand-wine border-rose-100"
+                            statusStyles[appointment.status]
                           )}
                         >
                           {translateStatus(appointment.status)}
@@ -332,20 +363,10 @@ export function AppointmentsTable({
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="min-h-10 px-3 text-xs"
-                          onClick={() => onSelectEdit(appointment)}
-                        >
+                        <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectEdit(appointment)}>
                           Editar
                         </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="min-h-10 px-3 text-xs"
-                          onClick={() => onSelectReschedule(appointment)}
-                        >
+                        <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectReschedule(appointment)}>
                           Reprogramar
                         </Button>
                         <Button
@@ -360,20 +381,18 @@ export function AppointmentsTable({
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {statusOptions
-                          .filter((status) => status.value !== appointment.status)
-                          .map((status) => (
-                            <Button
-                              key={status.value}
-                              type="button"
-                              variant="secondary"
-                              className="min-h-10 px-3 text-[11px]"
-                              disabled={isUpdatingId === appointment.id}
-                              onClick={() => onStatusChange(appointment.id, status.value)}
-                            >
-                              {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
-                            </Button>
-                          ))}
+                        {statusOptions.filter((status) => status.value !== appointment.status).map((status) => (
+                          <Button
+                            key={status.value}
+                            type="button"
+                            variant="secondary"
+                            className="min-h-10 px-3 text-[11px]"
+                            disabled={isUpdatingId === appointment.id}
+                            onClick={() => onStatusChange(appointment.id, status.value)}
+                          >
+                            {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
+                          </Button>
+                        ))}
                       </div>
                     </article>
                   ))
@@ -421,7 +440,7 @@ export function AppointmentsTable({
                     <span
                       className={clsx(
                         "inline-flex rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide",
-                        statusStyles[appointment.status] || "bg-rose-50 text-brand-wine border-rose-100"
+                        statusStyles[appointment.status]
                       )}
                     >
                       {translateStatus(appointment.status)}
@@ -429,38 +448,26 @@ export function AppointmentsTable({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
-                      {statusOptions
-                        .filter((status) => status.value !== appointment.status)
-                        .map((status) => (
-                          <Button
-                            key={status.value}
-                            type="button"
-                            variant="secondary"
-                            className="min-h-10 px-3 text-xs"
-                            disabled={isUpdatingId === appointment.id}
-                            onClick={() => onStatusChange(appointment.id, status.value)}
-                          >
-                            {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
-                          </Button>
-                        ))}
+                      {statusOptions.filter((status) => status.value !== appointment.status).map((status) => (
+                        <Button
+                          key={status.value}
+                          type="button"
+                          variant="secondary"
+                          className="min-h-10 px-3 text-xs"
+                          disabled={isUpdatingId === appointment.id}
+                          onClick={() => onStatusChange(appointment.id, status.value)}
+                        >
+                          {isUpdatingId === appointment.id ? "Actualizando..." : status.label}
+                        </Button>
+                      ))}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-10 px-3 text-xs"
-                        onClick={() => onSelectEdit(appointment)}
-                      >
+                      <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectEdit(appointment)}>
                         Editar
                       </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="min-h-10 px-3 text-xs"
-                        onClick={() => onSelectReschedule(appointment)}
-                      >
+                      <Button type="button" variant="secondary" className="min-h-10 px-3 text-xs" onClick={() => onSelectReschedule(appointment)}>
                         Reprogramar
                       </Button>
                       <Button
@@ -484,7 +491,7 @@ export function AppointmentsTable({
   );
 }
 
-function SummaryPill({ label, value, tone }) {
+function SummaryPill({ label, value, tone }: SummaryPillProps) {
   return (
     <div className="rounded-[1.25rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
@@ -495,13 +502,13 @@ function SummaryPill({ label, value, tone }) {
   );
 }
 
-function translateStatus(status) {
-  const labels = {
+function translateStatus(status: AppointmentStatus) {
+  const labels: Record<AppointmentStatus, string> = {
     PENDING: "Pendiente",
     CONFIRMED: "Confirmado",
     CANCELED: "Cancelado",
     COMPLETED: "Realizado",
   };
 
-  return labels[status] || status;
+  return labels[status];
 }

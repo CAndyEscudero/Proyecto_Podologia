@@ -1,13 +1,14 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { login } from "../../services/adminApi";
+import { login } from "../../features/admin/auth/api/auth.api";
+import type { LoginPayload } from "../../features/admin/auth/types/auth.types";
 import { setStoredToken } from "../../shared/utils/auth";
 import { Button } from "../../shared/ui/button/Button";
 
-const loginSchema = z.object({
+const loginSchema: z.ZodType<LoginPayload> = z.object({
   email: z.string().trim().min(6, "Email invalido").max(120, "Email invalido").email("Email invalido"),
   password: z.string().min(8, "Minimo 8 caracteres").max(72, "Maximo 72 caracteres"),
 });
@@ -18,21 +19,23 @@ export function AdminLoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<LoginPayload>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit(values) {
+  const onSubmit: SubmitHandler<LoginPayload> = async (values) => {
     try {
       const data = await login(values);
       setStoredToken(data.token);
       toast.success("Sesion iniciada");
-      navigate("/admin/dashboard");
+      void navigate("/admin/dashboard");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "No fue posible iniciar sesion");
+      const message =
+        error instanceof Error ? error.message : "No fue posible iniciar sesion";
+      toast.error(message);
     }
-  }
+  };
 
   return (
     <section className="flex min-h-screen items-center justify-center bg-hero-glow px-5 py-16">

@@ -309,23 +309,23 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Turnos
 
-- [ ] Migrar `AppointmentsTable.jsx` a `.tsx`.
-- [ ] Migrar `AppointmentsManager.jsx` a `.tsx`.
-- [ ] Reducir tipos inline y objetos anónimos.
+- [x] Migrar `AppointmentsTable.jsx` a `.tsx`.
+- [x] Migrar `AppointmentsManager.jsx` a `.tsx`.
+- [x] Reducir tipos inline y objetos anónimos.
 
 ### Dashboard
 
-- [ ] Migrar `frontend/src/pages/admin/AdminDashboardPage.jsx` a `.tsx`.
-- [ ] Tipar filtros, estados y handlers.
-- [ ] Evaluar extraer hooks o helpers si el archivo sigue muy cargado.
+- [x] Migrar `frontend/src/pages/admin/AdminDashboardPage.jsx` a `.tsx`.
+- [x] Tipar filtros, estados y handlers.
+- [x] Evaluar extraer hooks o helpers si el archivo sigue muy cargado.
 
 ### Login
 
-- [ ] Migrar `frontend/src/pages/admin/AdminLoginPage.jsx` a `.tsx`.
+- [x] Migrar `frontend/src/pages/admin/AdminLoginPage.jsx` a `.tsx`.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Verificar login admin.
 - [ ] Verificar dashboard.
 - [ ] Verificar alta manual de turno.

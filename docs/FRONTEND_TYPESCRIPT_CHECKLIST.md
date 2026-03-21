@@ -76,7 +76,7 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Validacion de cierre
 
-- [x] `npm --prefix frontend run build`
+- [ ] `npm --prefix frontend run build`
 - [ ] Comparar visualmente home.
 - [ ] Comparar visualmente booking.
 - [ ] Comparar visualmente admin login.
@@ -282,24 +282,24 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Navegacion y resumen
 
-- [ ] Migrar `AdminSidebar.jsx` a `.tsx`.
-- [ ] Migrar `AdminSummary.jsx` a `.tsx`.
+- [x] Migrar `AdminSidebar.jsx` a `.tsx`.
+- [x] Migrar `AdminSummary.jsx` a `.tsx`.
 
 ### Servicios
 
-- [ ] Migrar `ServicesManager.jsx` a `.tsx`.
+- [x] Migrar `ServicesManager.jsx` a `.tsx`.
 
 ### Disponibilidad
 
-- [ ] Migrar `AvailabilityManager.jsx` a `.tsx`.
+- [x] Migrar `AvailabilityManager.jsx` a `.tsx`.
 
 ### Business settings
 
-- [ ] Migrar `BusinessSettingsPanel.jsx` a `.tsx`.
+- [x] Migrar `BusinessSettingsPanel.jsx` a `.tsx`.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Verificar gestión de servicios.
 - [ ] Verificar gestión de reglas.
 - [ ] Verificar bloqueos.

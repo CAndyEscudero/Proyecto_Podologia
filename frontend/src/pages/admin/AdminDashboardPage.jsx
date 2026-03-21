@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { Menu } from "lucide-react";
-import { AdminSummary } from "../../components/admin/AdminSummary";
-import { AdminSidebar } from "../../components/admin/AdminSidebar";
+import { AdminSummary } from "../../features/admin/appointments/components/AdminSummary";
+import { AdminSidebar } from "../../features/admin/navigation/components/AdminSidebar";
 import { AppointmentsManager } from "../../components/admin/AppointmentsManager";
 import { AppointmentsTable } from "../../components/admin/AppointmentsTable";
-import { AvailabilityManager } from "../../components/admin/AvailabilityManager";
-import { BusinessSettingsPanel } from "../../components/admin/BusinessSettingsPanel";
-import { ServicesManager } from "../../components/admin/ServicesManager";
+import { AvailabilityManager } from "../../features/admin/availability/components/AvailabilityManager";
+import { BusinessSettingsPanel } from "../../features/admin/business-settings/components/BusinessSettingsPanel";
+import { ServicesManager } from "../../features/admin/services/components/ServicesManager";
 import {
   createAvailabilityRule,
   createAppointment,

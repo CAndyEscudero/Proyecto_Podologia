@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import type { LucideIcon } from "lucide-react";
 import {
   BriefcaseBusiness,
   CalendarRange,
@@ -8,8 +9,9 @@ import {
   Settings2,
   X,
 } from "lucide-react";
+import type { AdminNavigationItem } from "../types/navigation.types";
 
-const icons = {
+const icons: Record<string, LucideIcon> = {
   appointments: CalendarRange,
   appointmentCreate: PlusSquare,
   appointmentManage: ChevronRight,
@@ -18,6 +20,15 @@ const icons = {
   business: Settings2,
 };
 
+interface AdminSidebarProps {
+  items: AdminNavigationItem[];
+  activeTab: string;
+  onChange: (nextTab: string) => void;
+  className?: string;
+  showCloseButton?: boolean;
+  onClose?: () => void;
+}
+
 export function AdminSidebar({
   items,
   activeTab,
@@ -25,7 +36,7 @@ export function AdminSidebar({
   className,
   showCloseButton = false,
   onClose,
-}) {
+}: AdminSidebarProps) {
   return (
     <aside className={clsx("space-y-4", className)}>
       <div className="card-surface bg-white/92 p-4">

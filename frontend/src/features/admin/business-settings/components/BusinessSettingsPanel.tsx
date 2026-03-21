@@ -1,8 +1,14 @@
 import { z } from "zod";
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../../shared/ui/button/Button";
+import { Button } from "../../../../shared/ui/button/Button";
+import type {
+  BusinessSettings,
+  BusinessSettingsFormValues,
+  UpdateBusinessSettingsPayload,
+} from "../types/business-settings.types";
 
 const settingsSchema = z.object({
   businessName: z.string().trim().min(3, "Ingresa un nombre valido").max(120, "Maximo 120 caracteres"),
@@ -14,7 +20,7 @@ const settingsSchema = z.object({
   timezone: z.string().trim().min(3, "Timezone invalida").max(80, "Maximo 80 caracteres"),
 });
 
-const defaultValues = {
+const defaultValues: BusinessSettingsFormValues = {
   businessName: "",
   contactEmail: "",
   phone: "",
@@ -24,14 +30,20 @@ const defaultValues = {
   timezone: "America/Argentina/Buenos_Aires",
 };
 
-export function BusinessSettingsPanel({ settings, onSave, isSaving }) {
+interface BusinessSettingsPanelProps {
+  settings: BusinessSettings | null;
+  onSave: (payload: UpdateBusinessSettingsPayload) => void;
+  isSaving: boolean;
+}
+
+export function BusinessSettingsPanel({ settings, onSave, isSaving }: BusinessSettingsPanelProps) {
   const {
     register,
     handleSubmit,
     reset,
     watch,
     formState: { errors, isDirty },
-  } = useForm({
+  } = useForm<BusinessSettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues,
   });
@@ -62,7 +74,7 @@ export function BusinessSettingsPanel({ settings, onSave, isSaving }) {
     timezone: watch("timezone"),
   };
 
-  function onSubmit(values) {
+  function onSubmit(values: BusinessSettingsFormValues): void {
     onSave({
       businessName: values.businessName,
       contactEmail: values.contactEmail || null,
@@ -156,7 +168,13 @@ export function BusinessSettingsPanel({ settings, onSave, isSaving }) {
   );
 }
 
-function Field({ label, error, children }) {
+interface FieldProps {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}
+
+function Field({ label, error, children }: FieldProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-brand-ink">{label}</span>
@@ -166,7 +184,12 @@ function Field({ label, error, children }) {
   );
 }
 
-function PreviewItem({ label, value }) {
+interface PreviewItemProps {
+  label: string;
+  value: string;
+}
+
+function PreviewItem({ label, value }: PreviewItemProps) {
   return (
     <div className="rounded-[1.25rem] border border-rose-100 bg-white px-4 py-4">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-wine">{label}</p>
@@ -175,7 +198,13 @@ function PreviewItem({ label, value }) {
   );
 }
 
-function RuleCard({ label, value, copy }) {
+interface RuleCardProps {
+  label: string;
+  value: string;
+  copy: string;
+}
+
+function RuleCard({ label, value, copy }: RuleCardProps) {
   return (
     <div className="rounded-[1.25rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
       <div className="flex items-center justify-between gap-3">

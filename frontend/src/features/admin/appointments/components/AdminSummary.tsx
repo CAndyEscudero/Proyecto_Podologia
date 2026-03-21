@@ -1,4 +1,10 @@
-export function AdminSummary({ items }) {
+import type { AdminSummaryItem } from "../types/appointments.types";
+
+interface AdminSummaryProps {
+  items: AdminSummaryItem[];
+}
+
+export function AdminSummary({ items }: AdminSummaryProps) {
   return (
     <section className="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (

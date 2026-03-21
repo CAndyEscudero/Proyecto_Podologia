@@ -2,6 +2,12 @@ import type { Appointment, AppointmentStatus } from "../../../../shared/types/do
 
 export type { Appointment, AppointmentStatus } from "../../../../shared/types/domain";
 
+export interface AdminSummaryItem {
+  label: string;
+  value: string;
+  copy?: string;
+}
+
 export interface AppointmentFilters {
   dateFrom: string;
   dateTo: string;

@@ -35,3 +35,17 @@ export interface CreateBlockedDatePayload {
   endTime?: string | null;
   reason?: string | null;
 }
+
+export interface AvailabilityRuleFormValues {
+  dayOfWeek: number;
+  type: AvailabilityRuleType;
+  startTime: string;
+  endTime: string;
+}
+
+export interface BlockedDateFormValues {
+  date: string;
+  reason?: string;
+  startTime?: string;
+  endTime?: string;
+}

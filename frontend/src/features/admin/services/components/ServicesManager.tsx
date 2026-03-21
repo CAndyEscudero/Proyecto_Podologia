@@ -3,7 +3,13 @@ import clsx from "clsx";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../../shared/ui/button/Button";
+import { Button } from "../../../../shared/ui/button/Button";
+import type {
+  CreateServicePayload,
+  Service,
+  ServiceFormValues,
+  UpdateServicePayload,
+} from "../types/services.types";
 
 const serviceSchema = z.object({
   name: z.string().trim().min(3, "Ingresa un nombre valido").max(80, "Maximo 80 caracteres"),
@@ -21,13 +27,25 @@ const serviceSchema = z.object({
     .transform((value) => (value === "" ? null : value)),
 });
 
-const emptyValues = {
+const emptyValues: ServiceFormValues = {
   name: "",
   slug: "",
   description: "",
   durationMin: 45,
   priceCents: "",
 };
+
+interface ServicesManagerProps {
+  services: Service[];
+  onCreate: (payload: CreateServicePayload, onSuccess?: () => void) => void;
+  onUpdate: (id: number, payload: UpdateServicePayload, onSuccess?: () => void) => void;
+  onDelete: (id: number) => void;
+  isSaving: boolean;
+  isDeletingId: number | null;
+  editingService: Service | null;
+  onEdit: (service: Service) => void;
+  onCancelEdit: () => void;
+}
 
 export function ServicesManager({
   services,
@@ -39,13 +57,13 @@ export function ServicesManager({
   editingService,
   onEdit,
   onCancelEdit,
-}) {
+}: ServicesManagerProps) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm({
+  } = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
     defaultValues: emptyValues,
   });
@@ -65,10 +83,11 @@ export function ServicesManager({
     reset(emptyValues);
   }, [editingService, reset]);
 
-  function onSubmit(values) {
-    const payload = {
+  function onSubmit(values: ServiceFormValues): void {
+    const payload: CreateServicePayload = {
       ...values,
-      priceCents: values.priceCents === null ? undefined : values.priceCents,
+      priceCents:
+        values.priceCents === "" || values.priceCents === null ? undefined : values.priceCents,
     };
 
     if (editingService) {

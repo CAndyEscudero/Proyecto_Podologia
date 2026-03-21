@@ -3,7 +3,16 @@ import { z } from "zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "../../shared/ui/button/Button";
+import { Button } from "../../../../shared/ui/button/Button";
+import type {
+  AvailabilityRule,
+  AvailabilityRuleFormValues,
+  BlockedDate,
+  BlockedDateFormValues,
+  CreateAvailabilityRulePayload,
+  CreateBlockedDatePayload,
+  UpdateAvailabilityRulePayload,
+} from "../types/availability.types";
 
 const ruleSchema = z.object({
   dayOfWeek: z.coerce.number().int().min(0).max(6),
@@ -19,25 +28,42 @@ const blockedDateSchema = z.object({
   endTime: z.string().optional().or(z.literal("")),
 });
 
-const ruleDefaults = {
+const ruleDefaults: AvailabilityRuleFormValues = {
   dayOfWeek: 1,
   type: "WORKING_HOURS",
   startTime: "09:00",
   endTime: "13:00",
 };
 
-const blockedDateDefaults = {
+const blockedDateDefaults: BlockedDateFormValues = {
   date: dayjs().add(1, "day").format("YYYY-MM-DD"),
   reason: "",
   startTime: "",
   endTime: "",
 };
 
-const days = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
-const ruleLabels = {
+const days = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"] as const;
+const ruleLabels: Record<AvailabilityRule["type"], string> = {
   WORKING_HOURS: "Horario laboral",
   BREAK: "Pausa",
 };
+
+interface AvailabilityManagerProps {
+  rules: AvailabilityRule[];
+  blockedDates: BlockedDate[];
+  onCreateRule: (payload: CreateAvailabilityRulePayload, onSuccess?: () => void) => void;
+  onUpdateRule: (id: number, payload: UpdateAvailabilityRulePayload, onSuccess?: () => void) => void;
+  onDeleteRule: (id: number) => void;
+  onCreateBlockedDate: (payload: CreateBlockedDatePayload, onSuccess?: () => void) => void;
+  onDeleteBlockedDate: (id: number) => void;
+  isSavingRule: boolean;
+  isDeletingRuleId: number | null;
+  isSavingBlockedDate: boolean;
+  isDeletingBlockedDateId: number | null;
+  editingRule: AvailabilityRule | null;
+  onEditRule: (rule: AvailabilityRule) => void;
+  onCancelEditRule: () => void;
+}
 
 export function AvailabilityManager({
   rules,
@@ -54,13 +80,13 @@ export function AvailabilityManager({
   editingRule,
   onEditRule,
   onCancelEditRule,
-}) {
+}: AvailabilityManagerProps) {
   const {
     register: registerRule,
     handleSubmit: handleSubmitRule,
     reset: resetRule,
     formState: { errors: ruleErrors },
-  } = useForm({
+  } = useForm<AvailabilityRuleFormValues>({
     resolver: zodResolver(ruleSchema),
     defaultValues: ruleDefaults,
   });
@@ -71,7 +97,7 @@ export function AvailabilityManager({
     reset: resetBlockedDate,
     watch: watchBlockedDate,
     formState: { errors: blockedDateErrors },
-  } = useForm({
+  } = useForm<BlockedDateFormValues>({
     resolver: zodResolver(blockedDateSchema),
     defaultValues: blockedDateDefaults,
   });
@@ -92,7 +118,7 @@ export function AvailabilityManager({
 
   const hasPartialBlock = Boolean(watchBlockedDate("startTime") || watchBlockedDate("endTime"));
 
-  function submitRule(values) {
+  function submitRule(values: AvailabilityRuleFormValues): void {
     if (editingRule) {
       onUpdateRule(editingRule.id, values, () => resetRule(ruleDefaults));
       return;
@@ -101,7 +127,7 @@ export function AvailabilityManager({
     onCreateRule(values, () => resetRule(ruleDefaults));
   }
 
-  function submitBlockedDate(values) {
+  function submitBlockedDate(values: BlockedDateFormValues): void {
     const payload = {
       date: values.date,
       reason: values.reason || undefined,

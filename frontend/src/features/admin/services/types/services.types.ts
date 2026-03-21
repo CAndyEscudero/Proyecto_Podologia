@@ -2,6 +2,14 @@ import type { Service } from "../../../../shared/types/domain";
 
 export type { Service } from "../../../../shared/types/domain";
 
+export interface ServiceFormValues {
+  name: string;
+  slug: string;
+  description: string;
+  durationMin: number;
+  priceCents: number | "" | null;
+}
+
 export interface CreateServicePayload {
   name: string;
   slug: string;

@@ -15,7 +15,7 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 ## Rama recomendada
 
 - [x] Crear rama `chore/frontend-typescript-foundation`.
-- [ ] Hacer `push -u` de la rama antes de arrancar.
+- [x] Hacer `push -u` de la rama antes de arrancar.
 
 ## Etapa 0 - Preparacion
 

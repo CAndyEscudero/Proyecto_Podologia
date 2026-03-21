@@ -338,25 +338,25 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Limpieza de estructura vieja
 
-- [ ] Eliminar imports viejos ya reemplazados.
-- [ ] Eliminar archivos `.js` y `.jsx` migrados que ya no se usen.
-- [ ] Eliminar carpetas viejas si quedaron duplicadas.
-- [ ] Revisar rutas relativas y aliases si hiciera falta.
+- [x] Eliminar imports viejos ya reemplazados.
+- [x] Eliminar archivos `.js` y `.jsx` migrados que ya no se usen.
+- [x] Eliminar carpetas viejas si quedaron duplicadas.
+- [x] Revisar rutas relativas y aliases si hiciera falta.
 
 ### Calidad
 
-- [ ] Buscar usos de `any`.
-- [ ] Buscar imports rotos.
-- [ ] Buscar archivos sin tipo de props exportadas.
-- [ ] Revisar warnings de compilación.
+- [x] Buscar usos de `any`.
+- [x] Buscar imports rotos.
+- [x] Buscar archivos sin tipo de props exportadas.
+- [x] Revisar warnings de compilación.
 
 ### Validacion final
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Levantar la app y hacer smoke test general.
 - [ ] Confirmar que booking funciona.
 - [ ] Confirmar que admin funciona.
-- [ ] Confirmar que Tailwind quedó ordenado en `styles/`.
+- [x] Confirmar que Tailwind quedó ordenado en `styles/`.
 
 ## Checklist de verificacion rapida por cada PR o bloque
 

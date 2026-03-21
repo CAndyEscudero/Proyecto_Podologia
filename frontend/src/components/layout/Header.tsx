@@ -2,7 +2,12 @@ import { Link, NavLink } from "react-router-dom";
 import { siteConfig } from "../../app/config/site-config";
 import { Button } from "../../shared/ui/button/Button";
 
-const links = [
+interface HeaderLink {
+  to: string;
+  label: string;
+}
+
+const links: HeaderLink[] = [
   { to: "/", label: "Inicio" },
   { to: "/#servicios", label: "Servicios" },
   { to: "/#faq", label: "FAQ" },

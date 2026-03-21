@@ -1,15 +1,9 @@
 import { Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { clearStoredToken } from "../shared/utils/auth";
-import { getBusinessSettings, getMe } from "../services/adminApi";
-
-interface HeaderContextUser {
-  fullName?: string;
-}
-
-interface HeaderContextBusinessSettings {
-  businessName?: string;
-}
+import { getMe } from "../features/admin/auth/api/auth.api";
+import { getBusinessSettings } from "../features/admin/business-settings/api/business-settings.api";
+import type { BusinessSettings, User } from "../shared/types/domain";
 
 export function AdminLayout() {
   const [userName, setUserName] = useState<string>("");
@@ -18,10 +12,10 @@ export function AdminLayout() {
   useEffect(() => {
     async function loadHeaderContext() {
       try {
-        const [meResponse, businessSettingsResponse] = await Promise.all([
+        const [meResponse, businessSettingsResponse]: [{ user: User }, BusinessSettings] = await Promise.all([
           getMe(),
           getBusinessSettings(),
-        ]) as [{ user?: HeaderContextUser }, HeaderContextBusinessSettings];
+        ]);
         setUserName(meResponse?.user?.fullName || "");
         setBusinessName(businessSettingsResponse?.businessName || "");
       } catch {
@@ -30,7 +24,7 @@ export function AdminLayout() {
       }
     }
 
-    loadHeaderContext();
+    void loadHeaderContext();
   }, []);
 
   return (

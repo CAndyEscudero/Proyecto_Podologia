@@ -139,34 +139,34 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Tipos funcionales
 
-- [ ] Crear tipo `AppointmentStatus`.
-- [ ] Crear tipo `Client`.
-- [ ] Crear tipo `Service`.
-- [ ] Crear tipo `Appointment`.
-- [ ] Crear tipo `AvailabilitySlot`.
-- [ ] Crear tipo `AvailabilityRule`.
-- [ ] Crear tipo `BlockedDate`.
-- [ ] Crear tipo `BusinessSettings`.
-- [ ] Crear tipo `User`.
+- [x] Crear tipo `AppointmentStatus`.
+- [x] Crear tipo `Client`.
+- [x] Crear tipo `Service`.
+- [x] Crear tipo `Appointment`.
+- [x] Crear tipo `AvailabilitySlot`.
+- [x] Crear tipo `AvailabilityRule`.
+- [x] Crear tipo `BlockedDate`.
+- [x] Crear tipo `BusinessSettings`.
+- [x] Crear tipo `User`.
 
 ### Payloads
 
-- [ ] Crear `LoginPayload`.
-- [ ] Crear `CreateAppointmentPayload`.
-- [ ] Crear `UpdateAppointmentPayload`.
-- [ ] Crear `RescheduleAppointmentPayload`.
-- [ ] Crear `CreateServicePayload`.
-- [ ] Crear `UpdateServicePayload`.
-- [ ] Crear `CreateAvailabilityRulePayload`.
-- [ ] Crear `CreateBlockedDatePayload`.
-- [ ] Crear `UpdateBusinessSettingsPayload`.
+- [x] Crear `LoginPayload`.
+- [x] Crear `CreateAppointmentPayload`.
+- [x] Crear `UpdateAppointmentPayload`.
+- [x] Crear `RescheduleAppointmentPayload`.
+- [x] Crear `CreateServicePayload`.
+- [x] Crear `UpdateServicePayload`.
+- [x] Crear `CreateAvailabilityRulePayload`.
+- [x] Crear `CreateBlockedDatePayload`.
+- [x] Crear `UpdateBusinessSettingsPayload`.
 
 ### Responses
 
-- [ ] Crear `LoginResponse`.
-- [ ] Crear `MeResponse`.
-- [ ] Crear `CreateAppointmentResponse`.
-- [ ] Crear `AvailableSlotsResponse`.
+- [x] Crear `LoginResponse`.
+- [x] Crear `MeResponse`.
+- [x] Crear `CreateAppointmentResponse`.
+- [x] Crear `AvailableSlotsResponse`.
 
 ## Etapa 6 - APIs por feature
 

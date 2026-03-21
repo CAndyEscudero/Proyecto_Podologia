@@ -3,9 +3,17 @@ import { useEffect, useState } from "react";
 import { clearStoredToken } from "../shared/utils/auth";
 import { getBusinessSettings, getMe } from "../services/adminApi";
 
+interface HeaderContextUser {
+  fullName?: string;
+}
+
+interface HeaderContextBusinessSettings {
+  businessName?: string;
+}
+
 export function AdminLayout() {
-  const [userName, setUserName] = useState("");
-  const [businessName, setBusinessName] = useState("");
+  const [userName, setUserName] = useState<string>("");
+  const [businessName, setBusinessName] = useState<string>("");
 
   useEffect(() => {
     async function loadHeaderContext() {
@@ -13,7 +21,7 @@ export function AdminLayout() {
         const [meResponse, businessSettingsResponse] = await Promise.all([
           getMe(),
           getBusinessSettings(),
-        ]);
+        ]) as [{ user?: HeaderContextUser }, HeaderContextBusinessSettings];
         setUserName(meResponse?.user?.fullName || "");
         setBusinessName(businessSettingsResponse?.businessName || "");
       } catch {

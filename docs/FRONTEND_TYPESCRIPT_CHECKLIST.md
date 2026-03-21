@@ -118,18 +118,18 @@ Migrar el frontend a TypeScript de forma gradual, manteniendo la app funcional, 
 
 ### Router
 
-- [ ] Migrar `frontend/src/routes/router.jsx` a `frontend/src/app/router/index.tsx`.
-- [ ] Tipar navegación protegida y rutas públicas.
+- [x] Migrar `frontend/src/routes/router.jsx` a `frontend/src/app/router/index.tsx`.
+- [x] Tipar navegación protegida y rutas públicas.
 
 ### Layouts
 
-- [ ] Migrar `frontend/src/layouts/PublicLayout.jsx` a `frontend/src/layouts/PublicLayout.tsx`.
-- [ ] Migrar `frontend/src/layouts/AdminLayout.jsx` a `frontend/src/layouts/AdminLayout.tsx`.
-- [ ] Tipar props y estados simples de layout.
+- [x] Migrar `frontend/src/layouts/PublicLayout.jsx` a `frontend/src/layouts/PublicLayout.tsx`.
+- [x] Migrar `frontend/src/layouts/AdminLayout.jsx` a `frontend/src/layouts/AdminLayout.tsx`.
+- [x] Tipar props y estados simples de layout.
 
 ### Validacion de cierre
 
-- [ ] `npm --prefix frontend run build`
+- [x] `npm --prefix frontend run build`
 - [ ] Verificar home.
 - [ ] Verificar reservas.
 - [ ] Verificar admin login.

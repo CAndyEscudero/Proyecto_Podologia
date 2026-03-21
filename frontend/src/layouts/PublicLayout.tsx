@@ -5,7 +5,7 @@ import { WhatsAppFloat } from "../components/layout/WhatsAppFloat";
 
 export function PublicLayout() {
   return (
-    <div>
+    <div className="min-h-screen">
       <Header />
       <main>
         <Outlet />

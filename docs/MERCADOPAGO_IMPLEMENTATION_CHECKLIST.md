@@ -83,14 +83,14 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 
 ## 6. Flujo de reserva backend
 
-- [ ] Revisar `createAppointment` actual
-- [ ] Crear endpoint nuevo, separado del flujo viejo
-- [ ] Validar slot
-- [ ] Calcular total y seña
-- [ ] Crear reserva/turno en estado pendiente
+- [x] Revisar `createAppointment` actual
+- [x] Crear endpoint nuevo, separado del flujo viejo
+- [x] Validar slot
+- [x] Calcular total y seña
+- [x] Crear reserva/turno en estado pendiente
 - [ ] Crear preferencia de Mercado Pago
 - [ ] Devolver URL o `init_point`
-- [ ] Definir expiracion de reserva pendiente
+- [x] Definir expiracion de reserva pendiente
 
 ## 7. Frontend publico
 

@@ -5,6 +5,11 @@ async function createAppointmentController(req, res) {
   res.status(201).json(appointment);
 }
 
+async function createPaymentReservationController(req, res) {
+  const appointment = await appointmentService.createPaymentReservation(req.body);
+  res.status(201).json(appointment);
+}
+
 async function listAppointmentsController(req, res) {
   const appointments = await appointmentService.listAppointments(req.query);
   res.json(appointments);
@@ -41,6 +46,7 @@ async function deleteAppointmentController(req, res) {
 
 module.exports = {
   createAppointmentController,
+  createPaymentReservationController,
   deleteAppointmentController,
   getAppointmentController,
   listAppointmentsController,

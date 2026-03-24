@@ -3,6 +3,7 @@ export interface ApiErrorResponse {
 }
 
 import type { Appointment, AvailabilitySlot, PaymentOption, Service, User } from "./domain";
+import type { PaymentSummary } from "./payments";
 
 export interface LoginResponse {
   token: string;
@@ -20,8 +21,11 @@ export interface CreateAppointmentResponse {
 export interface CreateAppointmentPaymentResponse {
   message: string;
   appointment: Appointment;
-  checkoutUrl: string;
-  paymentOption: PaymentOption;
+  paymentSummary: PaymentSummary & {
+    paymentExpiresAt?: string | null;
+  };
+  checkoutUrl?: string;
+  paymentOption?: PaymentOption;
 }
 
 export interface AvailableSlotsResponse {

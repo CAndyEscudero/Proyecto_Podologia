@@ -3,6 +3,10 @@ const { AppError } = require("../../utils/app-error");
 const { normalizeDate, overlaps, addMinutes } = require("../../utils/time");
 const { getAvailabilityContext, getAvailableSlots } = require("../availability/availability.service");
 const { upsertClientByEmailOrPhone } = require("../clients/clients.service");
+const {
+  buildPendingPaymentWindow,
+  calculateDepositCents,
+} = require("../payments/payments.service");
 
 async function assertSlotAvailable({ serviceId, date, startTime, ignoredAppointmentId = null }) {
   const context = await getAvailabilityContext(serviceId, date);
@@ -34,6 +38,19 @@ async function assertSlotAvailable({ serviceId, date, startTime, ignoredAppointm
   };
 }
 
+function serializeAppointment(appointment) {
+  return {
+    ...appointment,
+    date: normalizeDate(appointment.date),
+    paymentApprovedAt: appointment.paymentApprovedAt
+      ? appointment.paymentApprovedAt.toISOString()
+      : null,
+    paymentExpiresAt: appointment.paymentExpiresAt
+      ? appointment.paymentExpiresAt.toISOString()
+      : null,
+  };
+}
+
 async function createAppointment(payload) {
   const { normalizedDate, service, endTime } = await assertSlotAvailable(payload);
   const client = await upsertClientByEmailOrPhone(payload.client);
@@ -56,9 +73,63 @@ async function createAppointment(payload) {
 
   return {
     message: "Turno creado correctamente",
-    appointment: {
-      ...appointment,
-      date: normalizeDate(appointment.date),
+    appointment: serializeAppointment(appointment),
+  };
+}
+
+async function createPaymentReservation(payload) {
+  const { normalizedDate, service, endTime } = await assertSlotAvailable(payload);
+
+  if (!service.priceCents || service.priceCents <= 0) {
+    throw new AppError(
+      "Este servicio no tiene precio configurado para reserva online. Contactanos por WhatsApp.",
+      409
+    );
+  }
+
+  const depositCents = calculateDepositCents(service.priceCents);
+
+  if (!depositCents) {
+    throw new AppError("No se pudo calcular la seña del servicio seleccionado", 409);
+  }
+
+  const client = await upsertClientByEmailOrPhone(payload.client);
+  const paymentExpiresAt = buildPendingPaymentWindow(15);
+
+  const appointment = await prisma.appointment.create({
+    data: {
+      clientId: client.id,
+      serviceId: service.id,
+      date: new Date(normalizedDate),
+      startTime: payload.startTime,
+      endTime,
+      notes: payload.client.notes || null,
+      status: "PENDING",
+      paymentStatus: "PENDING",
+      paymentOption: "DEPOSIT",
+      paymentProvider: "mercado_pago",
+      priceCents: service.priceCents,
+      depositCents,
+      paymentExpiresAt,
+      source: "web_payment",
+    },
+    include: {
+      client: true,
+      service: true,
+    },
+  });
+
+  return {
+    message: "Reserva pendiente de pago creada correctamente",
+    appointment: serializeAppointment(appointment),
+    paymentSummary: {
+      priceCents: appointment.priceCents,
+      depositCents: appointment.depositCents,
+      paymentStatus: appointment.paymentStatus,
+      paymentOption: appointment.paymentOption,
+      paymentExpiresAt: appointment.paymentExpiresAt
+        ? appointment.paymentExpiresAt.toISOString()
+        : null,
     },
   };
 }
@@ -108,10 +179,7 @@ async function listAppointments(filters) {
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  return appointments.map((appointment) => ({
-    ...appointment,
-    date: normalizeDate(appointment.date),
-  }));
+  return appointments.map(serializeAppointment);
 }
 
 async function getAppointmentById(id) {
@@ -127,10 +195,7 @@ async function getAppointmentById(id) {
     throw new AppError("Turno no encontrado", 404);
   }
 
-  return {
-    ...appointment,
-    date: normalizeDate(appointment.date),
-  };
+  return serializeAppointment(appointment);
 }
 
 async function updateAppointment(id, data) {
@@ -203,10 +268,7 @@ async function updateAppointment(id, data) {
   const transactionResults = await prisma.$transaction(operations);
   const appointment = transactionResults[transactionResults.length - 1];
 
-  return {
-    ...appointment,
-    date: normalizeDate(appointment.date),
-  };
+  return serializeAppointment(appointment);
 }
 
 async function updateAppointmentStatus(id, status) {
@@ -244,6 +306,7 @@ async function deleteAppointment(id) {
 
 module.exports = {
   createAppointment,
+  createPaymentReservation,
   deleteAppointment,
   getAppointmentById,
   listAppointments,

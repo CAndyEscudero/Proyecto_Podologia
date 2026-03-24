@@ -16,13 +16,13 @@ const env = {
   mercadoPagoWebhookSecret: process.env.MP_WEBHOOK_SECRET || "",
   mercadoPagoSuccessUrl:
     process.env.MP_SUCCESS_URL ||
-    `${process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173"}/reservas/resultado?status=success`,
+    `${process.env.API_BASE_URL || "http://localhost:4000"}/api/payments/return/success`,
   mercadoPagoPendingUrl:
     process.env.MP_PENDING_URL ||
-    `${process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173"}/reservas/resultado?status=pending`,
+    `${process.env.API_BASE_URL || "http://localhost:4000"}/api/payments/return/pending`,
   mercadoPagoFailureUrl:
     process.env.MP_FAILURE_URL ||
-    `${process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173"}/reservas/resultado?status=failure`,
+    `${process.env.API_BASE_URL || "http://localhost:4000"}/api/payments/return/failure`,
   loginRateLimitWindowMs: Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
   loginRateLimitMax: Number(process.env.LOGIN_RATE_LIMIT_MAX || 5),
 };

@@ -93,11 +93,12 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
       items: [
         {
           id: String(service.id),
-          title: `${service.name} - Reserva con seña`,
-          description: `Seña del 50% para ${service.name}`,
+          title: `${service.name}`,
+          description: "Reserva confirmada con sena del 50% del servicio",
           currency_id: "ARS",
           quantity: 1,
-          unit_price: appointment.depositCents / 100,
+          // In this app service prices are entered in ARS whole units.
+          unit_price: appointment.depositCents,
         },
       ],
       payer: {

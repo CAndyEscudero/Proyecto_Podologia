@@ -152,7 +152,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 - [x] Tests de webhook
 - [x] Tests de expiracion/vencimiento
 - [x] Tests de validacion de firma del webhook
-- [ ] E2E o scripts que validen:
+- [x] E2E o scripts que validen:
   - [x] creacion de reserva pendiente
   - [x] retorno aprobado
   - [x] retorno pendiente
@@ -171,7 +171,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 - [x] Ajustar booking UI
 - [x] Ajustar retorno de pago
 - [x] Ajustar admin
-- [ ] Probar casos borde
+- [x] Probar casos borde
 - [x] Recien despues pulir textos y UX
 
 ## 14. Primer bloque para arrancar
@@ -190,4 +190,4 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 - [x] No romper el flujo actual hasta tener el nuevo funcionando
 - [x] Iterar por capas
 - [x] Dejar trazabilidad para admin
-- [ ] Facilitar testeo y futuras integraciones
+- [x] Facilitar testeo y futuras integraciones

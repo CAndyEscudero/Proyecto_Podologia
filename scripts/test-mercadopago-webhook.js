@@ -118,11 +118,108 @@ async function run() {
     assert.equal(approvedAppointment.paymentStatus, "APPROVED", "El webhook aprobado deberia marcar APPROVED.");
     assert.equal(approvedAppointment.paymentReference, "900001", "La referencia de pago deberia guardarse.");
 
+    const pendingClient = await prisma.client.create({
+      data: {
+        firstName: "Webhook",
+        lastName: "Pendiente",
+        phone: `3463${String(stamp).slice(-6)}`,
+        email: `pending.${stamp}@test.local`,
+      },
+    });
+    clientIds.push(pendingClient.id);
+
+    const pendingAppointment = await prisma.appointment.create({
+      data: {
+        clientId: pendingClient.id,
+        serviceId: service.id,
+        date: new Date(date),
+        startTime: slots[1].startTime,
+        endTime: slots[1].endTime,
+        status: "PENDING",
+        paymentStatus: "PENDING",
+        paymentOption: "DEPOSIT",
+        paymentProvider: "mercado_pago",
+        priceCents: service.priceCents,
+        depositCents: Math.ceil(service.priceCents * 0.5),
+        paymentExpiresAt: new Date(Date.now() - 2 * 60 * 1000),
+        source: "web_payment",
+      },
+    });
+    createdAppointments.push(pendingAppointment.id);
+
+    global.fetch = createFetchMock(() => ({
+      id: 900002,
+      status: "pending",
+      external_reference: `appointment:${pendingAppointment.id}`,
+    }));
+
+    const pendingResult = await processMercadoPagoWebhook({
+      type: "payment",
+      data: { id: "900002" },
+    });
+
+    const pendingUpdatedAppointment = await prisma.appointment.findUnique({
+      where: { id: pendingAppointment.id },
+    });
+
+    assert.equal(pendingResult.manualReview, undefined, "Un pago pendiente no deberia ir a revision manual.");
+    assert.equal(pendingUpdatedAppointment.status, "PENDING", "El webhook pending deberia mantener el turno en PENDING.");
+    assert.equal(pendingUpdatedAppointment.paymentStatus, "PENDING", "El webhook pending deberia mantener el pago en PENDING.");
+    assert.equal(pendingUpdatedAppointment.paymentReference, "900002", "El pago pendiente deberia guardar su referencia.");
+
+    const rejectedClient = await prisma.client.create({
+      data: {
+        firstName: "Webhook",
+        lastName: "Rechazado",
+        phone: `3464${String(stamp).slice(-6)}`,
+        email: `rejected.${stamp}@test.local`,
+      },
+    });
+    clientIds.push(rejectedClient.id);
+
+    const rejectedAppointment = await prisma.appointment.create({
+      data: {
+        clientId: rejectedClient.id,
+        serviceId: service.id,
+        date: new Date(date),
+        startTime: slots[0].startTime,
+        endTime: slots[0].endTime,
+        status: "PENDING",
+        paymentStatus: "PENDING",
+        paymentOption: "DEPOSIT",
+        paymentProvider: "mercado_pago",
+        priceCents: service.priceCents,
+        depositCents: Math.ceil(service.priceCents * 0.5),
+        paymentExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        source: "web_payment",
+      },
+    });
+    createdAppointments.push(rejectedAppointment.id);
+
+    global.fetch = createFetchMock(() => ({
+      id: 900003,
+      status: "rejected",
+      external_reference: `appointment:${rejectedAppointment.id}`,
+    }));
+
+    await processMercadoPagoWebhook({
+      type: "payment",
+      data: { id: "900003" },
+    });
+
+    const rejectedUpdatedAppointment = await prisma.appointment.findUnique({
+      where: { id: rejectedAppointment.id },
+    });
+
+    assert.equal(rejectedUpdatedAppointment.status, "CANCELED", "El webhook rejected deberia cancelar el turno.");
+    assert.equal(rejectedUpdatedAppointment.paymentStatus, "REJECTED", "El webhook rejected deberia marcar REJECTED.");
+    assert.equal(rejectedUpdatedAppointment.paymentReference, "900003", "El pago rechazado deberia guardar su referencia.");
+
     const lateClient = await prisma.client.create({
       data: {
         firstName: "Webhook",
         lastName: "Tardio",
-        phone: `3463${String(stamp).slice(-6)}`,
+        phone: `3465${String(stamp).slice(-6)}`,
         email: `late.${stamp}@test.local`,
       },
     });
@@ -148,7 +245,7 @@ async function run() {
     createdAppointments.push(lateAppointment.id);
 
     global.fetch = createFetchMock(() => ({
-      id: 900002,
+      id: 900004,
       status: "approved",
       date_approved: new Date().toISOString(),
       external_reference: `appointment:${lateAppointment.id}`,
@@ -156,7 +253,7 @@ async function run() {
 
     const lateResult = await processMercadoPagoWebhook({
       type: "payment",
-      data: { id: "900002" },
+      data: { id: "900004" },
     });
 
     const lateApprovedAppointment = await prisma.appointment.findUnique({
@@ -166,6 +263,7 @@ async function run() {
     assert.equal(lateResult.manualReview, true, "Un pago aprobado fuera de ventana deberia quedar para revision manual.");
     assert.equal(lateApprovedAppointment.status, "CANCELED", "El turno tardio no deberia reconfirmarse automaticamente.");
     assert.equal(lateApprovedAppointment.paymentStatus, "APPROVED", "El pago tardio deberia quedar registrado como aprobado.");
+    assert.equal(lateApprovedAppointment.paymentReference, "900004", "El pago tardio deberia guardar su referencia.");
 
     console.log(
       JSON.stringify(
@@ -173,6 +271,8 @@ async function run() {
           checked: true,
           service: service.slug,
           confirmedAppointmentId: primaryAppointment.id,
+          pendingAppointmentId: pendingAppointment.id,
+          rejectedAppointmentId: rejectedAppointment.id,
           lateReviewAppointmentId: lateAppointment.id,
         },
         null,

@@ -60,7 +60,7 @@ const bookingSchema = z.object({
   firstName: z.string().trim().regex(personNameRegex, "Ingresa un nombre valido"),
   lastName: z.string().trim().regex(personNameRegex, "Ingresa un apellido valido"),
   phone: z.string().trim().regex(phoneRegex, "Ingresa un telefono valido"),
-  email: z.string().trim().max(120, "Email demasiado largo").email("Ingresa un email valido"),
+  email: z.union([z.literal(""), z.string().trim().max(120, "Email demasiado largo").email("Ingresa un email valido")]),
   notes: z.string().trim().max(1000, "Las observaciones son demasiado largas").optional(),
 });
 
@@ -192,7 +192,7 @@ export function BookingForm() {
           firstName: values.firstName,
           lastName: values.lastName,
           phone: values.phone,
-          email: values.email,
+          email: values.email || undefined,
           notes: values.notes,
         },
       });

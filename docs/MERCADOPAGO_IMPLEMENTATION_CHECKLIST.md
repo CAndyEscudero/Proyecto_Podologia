@@ -148,12 +148,12 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 
 ## 12. Testing
 
-- [ ] Tests backend del flujo de reserva con pago
-- [ ] Tests de webhook
-- [ ] Tests de expiracion/vencimiento
+- [x] Tests backend del flujo de reserva con pago
+- [x] Tests de webhook
+- [x] Tests de expiracion/vencimiento
 - [ ] E2E o scripts que validen:
   - [ ] creacion de reserva pendiente
-  - [ ] retorno aprobado
+  - [x] retorno aprobado
   - [ ] retorno pendiente
   - [ ] retorno rechazado
   - [ ] que un pago fallido no deje turno confirmado

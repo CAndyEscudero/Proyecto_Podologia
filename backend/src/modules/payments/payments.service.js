@@ -200,6 +200,7 @@ async function processMercadoPagoWebhook(payload) {
     await prisma.appointment.update({
       where: { id: appointmentId },
       data: {
+        status: "CANCELED",
         paymentStatus: "APPROVED",
         paymentReference: String(payment.id),
         paymentApprovedAt: new Date(payment.date_approved || new Date()),

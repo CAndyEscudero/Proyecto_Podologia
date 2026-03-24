@@ -74,6 +74,14 @@ function mapMercadoPagoStatus(status) {
   }
 }
 
+function hasPaymentWindowExpired(paymentExpiresAt) {
+  if (!paymentExpiresAt) {
+    return false;
+  }
+
+  return new Date(paymentExpiresAt).getTime() < Date.now();
+}
+
 async function createMercadoPagoPreference({ appointment, client, service }) {
   ensureMercadoPagoConfigured();
 
@@ -175,7 +183,37 @@ async function processMercadoPagoWebhook(payload) {
     return { ignored: true };
   }
 
+  const currentAppointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!currentAppointment) {
+    return { ignored: true };
+  }
+
   const statusMapping = mapMercadoPagoStatus(payment.status);
+  const isLateApprovedPayment =
+    payment.status === "approved" &&
+    (currentAppointment.paymentStatus === "EXPIRED" || hasPaymentWindowExpired(currentAppointment.paymentExpiresAt));
+
+  if (isLateApprovedPayment) {
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        paymentStatus: "APPROVED",
+        paymentReference: String(payment.id),
+        paymentApprovedAt: new Date(payment.date_approved || new Date()),
+      },
+    });
+
+    return {
+      ignored: false,
+      appointmentId,
+      paymentId: String(payment.id),
+      status: payment.status,
+      manualReview: true,
+    };
+  }
 
   await prisma.appointment.update({
     where: { id: appointmentId },
@@ -196,9 +234,28 @@ async function processMercadoPagoWebhook(payload) {
   };
 }
 
+async function expirePendingReservations() {
+  const result = await prisma.appointment.updateMany({
+    where: {
+      status: "PENDING",
+      paymentStatus: "PENDING",
+      paymentExpiresAt: {
+        lt: new Date(),
+      },
+    },
+    data: {
+      status: "CANCELED",
+      paymentStatus: "EXPIRED",
+    },
+  });
+
+  return result.count;
+}
+
 module.exports = {
   buildPendingPaymentWindow,
   calculateDepositCents,
   createMercadoPagoPreference,
+  expirePendingReservations,
   processMercadoPagoWebhook,
 };

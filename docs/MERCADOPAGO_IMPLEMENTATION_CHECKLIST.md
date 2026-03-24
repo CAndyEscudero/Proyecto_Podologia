@@ -135,8 +135,8 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 
 - [x] Definir cuanto dura una reserva pendiente
 - [x] Guardar `paymentExpiresAt`
-- [ ] Definir como se libera el horario si no se paga
-- [ ] Implementar una primera estrategia simple de vencimiento
+- [x] Definir como se libera el horario si no se paga
+- [x] Implementar una primera estrategia simple de vencimiento
 
 ## 11. Seguridad
 

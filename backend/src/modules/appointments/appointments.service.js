@@ -7,6 +7,7 @@ const {
   buildPendingPaymentWindow,
   calculateDepositCents,
   createMercadoPagoPreference,
+  expirePendingReservations,
 } = require("../payments/payments.service");
 
 async function assertSlotAvailable({ serviceId, date, startTime, ignoredAppointmentId = null }) {
@@ -152,6 +153,8 @@ async function createPaymentReservation(payload) {
 }
 
 async function listAppointments(filters) {
+  await expirePendingReservations();
+
   const where = {};
 
   if (filters.date) {
@@ -200,6 +203,8 @@ async function listAppointments(filters) {
 }
 
 async function getAppointmentById(id) {
+  await expirePendingReservations();
+
   const appointment = await prisma.appointment.findUnique({
     where: { id: Number(id) },
     include: {

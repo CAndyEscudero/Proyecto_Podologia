@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const { prisma } = require("../../config/prisma");
 const { AppError } = require("../../utils/app-error");
 const { addMinutes, isPastSlotForDate, normalizeDate, overlaps, toMinutes } = require("../../utils/time");
+const { expirePendingReservations } = require("../payments/payments.service");
 
 function validateBookingDate(normalizedDate, settings) {
   const requestedDate = dayjs(normalizedDate);
@@ -19,6 +20,8 @@ function validateBookingDate(normalizedDate, settings) {
 }
 
 async function getAvailabilityContext(serviceId, date) {
+  await expirePendingReservations();
+
   const normalizedDate = normalizeDate(date);
   const service = await prisma.service.findUnique({ where: { id: Number(serviceId) } });
 

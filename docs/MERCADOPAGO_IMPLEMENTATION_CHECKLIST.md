@@ -115,7 +115,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] estado de pago
   - [x] sena
   - [x] total
-  - [ ] referencia de pago si sirve
+  - [x] referencia de pago si sirve
 - [x] Permitir distinguir visualmente:
   - [x] pendiente de pago
   - [x] senado

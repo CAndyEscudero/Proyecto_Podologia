@@ -466,6 +466,11 @@ export function AppointmentsManager({
               value={formatBookingPrice(selectedAppointment.depositCents)}
               icon={CreditCard}
             />
+            <InfoRow
+              label="Referencia de pago"
+              value={selectedAppointment.paymentReference || "Sin referencia disponible"}
+              icon={CreditCard}
+            />
             <InfoRow label="Telefono" value={selectedAppointment.client.phone} icon={PhoneCall} />
             <InfoRow label="Email" value={selectedAppointment.client.email || "Sin email"} icon={FilePenLine} />
             <InfoRow label="Notas cliente" value={selectedAppointment.client.notes || "Sin notas"} icon={FilePenLine} />

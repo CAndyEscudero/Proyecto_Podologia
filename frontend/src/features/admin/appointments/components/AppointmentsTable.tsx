@@ -466,6 +466,10 @@ export function AppointmentsTable({
                             <strong className="font-semibold text-slate-700">Sena:</strong>{" "}
                             {formatBookingPrice(appointment.depositCents)}
                           </p>
+                          <p>
+                            <strong className="font-semibold text-slate-700">Referencia:</strong>{" "}
+                            {appointment.paymentReference || "Sin referencia"}
+                          </p>
                         </div>
                       </div>
 
@@ -575,6 +579,7 @@ export function AppointmentsTable({
                       <div className="text-xs text-slate-500">
                         <p>Total: {formatBookingPrice(appointment.priceCents)}</p>
                         <p>Sena: {formatBookingPrice(appointment.depositCents)}</p>
+                        <p>Referencia: {appointment.paymentReference || "Sin referencia"}</p>
                       </div>
                     </div>
                   </td>

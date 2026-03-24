@@ -1,6 +1,7 @@
 const { prisma } = require("../../config/prisma");
 const { env } = require("../../config/env");
 const { AppError } = require("../../utils/app-error");
+const { logPaymentAudit } = require("./payments.audit");
 
 function calculateDepositCents(priceCents) {
   if (!Number.isInteger(priceCents) || priceCents <= 0) {
@@ -144,6 +145,14 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
     },
   });
 
+  logPaymentAudit("preference.created", {
+    appointmentId: appointment.id,
+    serviceId: service.id,
+    preferenceId: data.id,
+    paymentOption: appointment.paymentOption,
+    amount: appointment.depositCents,
+  });
+
   return {
     preferenceId: data.id,
     checkoutUrl: data.init_point || data.sandbox_init_point || null,
@@ -173,6 +182,11 @@ async function processMercadoPagoWebhook(payload) {
   const topic = payload?.type || payload?.topic;
 
   if (!paymentId || (topic && topic !== "payment")) {
+    logPaymentAudit("webhook.ignored", {
+      reason: "unsupported_payload",
+      paymentId: paymentId || null,
+      topic: topic || null,
+    });
     return { ignored: true };
   }
 
@@ -180,6 +194,12 @@ async function processMercadoPagoWebhook(payload) {
   const appointmentId = extractAppointmentId(payment.external_reference);
 
   if (!appointmentId) {
+    logPaymentAudit("webhook.ignored", {
+      reason: "missing_appointment_reference",
+      paymentId: String(payment.id),
+      externalReference: payment.external_reference || null,
+      status: payment.status,
+    });
     return { ignored: true };
   }
 
@@ -188,10 +208,37 @@ async function processMercadoPagoWebhook(payload) {
   });
 
   if (!currentAppointment) {
+    logPaymentAudit("webhook.ignored", {
+      reason: "appointment_not_found",
+      paymentId: String(payment.id),
+      appointmentId,
+      status: payment.status,
+    });
     return { ignored: true };
   }
 
   const statusMapping = mapMercadoPagoStatus(payment.status);
+  const isDuplicateNotification =
+    currentAppointment.paymentReference === String(payment.id) &&
+    currentAppointment.paymentStatus === statusMapping.paymentStatus &&
+    currentAppointment.status === statusMapping.appointmentStatus;
+
+  if (isDuplicateNotification) {
+    logPaymentAudit("webhook.duplicate", {
+      appointmentId,
+      paymentId: String(payment.id),
+      status: payment.status,
+    });
+
+    return {
+      ignored: false,
+      duplicate: true,
+      appointmentId,
+      paymentId: String(payment.id),
+      status: payment.status,
+    };
+  }
+
   const isLateApprovedPayment =
     payment.status === "approved" &&
     (currentAppointment.paymentStatus === "EXPIRED" || hasPaymentWindowExpired(currentAppointment.paymentExpiresAt));
@@ -205,6 +252,13 @@ async function processMercadoPagoWebhook(payload) {
         paymentReference: String(payment.id),
         paymentApprovedAt: new Date(payment.date_approved || new Date()),
       },
+    });
+
+    logPaymentAudit("webhook.manual_review", {
+      appointmentId,
+      paymentId: String(payment.id),
+      status: payment.status,
+      reason: "late_approved_payment",
     });
 
     return {
@@ -225,6 +279,13 @@ async function processMercadoPagoWebhook(payload) {
       paymentApprovedAt:
         statusMapping.paymentStatus === "APPROVED" ? new Date(payment.date_approved || new Date()) : null,
     },
+  });
+
+  logPaymentAudit("webhook.processed", {
+    appointmentId,
+    paymentId: String(payment.id),
+    paymentStatus: statusMapping.paymentStatus,
+    appointmentStatus: statusMapping.appointmentStatus,
   });
 
   return {
@@ -249,6 +310,12 @@ async function expirePendingReservations() {
       paymentStatus: "EXPIRED",
     },
   });
+
+  if (result.count > 0) {
+    logPaymentAudit("reservations.expired", {
+      count: result.count,
+    });
+  }
 
   return result.count;
 }

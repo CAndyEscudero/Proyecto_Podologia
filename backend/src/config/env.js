@@ -35,4 +35,8 @@ if (env.nodeEnv === "production" && env.jwtSecret === "change_me") {
   throw new Error("JWT_SECRET must be configured in production");
 }
 
+if (env.nodeEnv === "production" && env.mercadoPagoAccessToken && !env.mercadoPagoWebhookSecret) {
+  throw new Error("MP_WEBHOOK_SECRET must be configured in production when Mercado Pago is enabled");
+}
+
 module.exports = { env };

@@ -79,7 +79,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] `POST /api/payments/webhook`
 - [x] Validar pago consultando API de Mercado Pago desde backend
 - [x] Actualizar turno solo desde webhook validado
-- [ ] Agregar logs minimos de auditoria
+- [x] Agregar logs minimos de auditoria
 
 ## 6. Flujo de reserva backend
 
@@ -140,17 +140,18 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 
 ## 11. Seguridad
 
-- [ ] Validar webhook correctamente
+- [x] Validar webhook correctamente
 - [x] No confiar en parametros del frontend para marcar pago aprobado
 - [x] Reconsultar estado del pago desde backend
 - [x] No exponer access token
-- [ ] Registrar eventos importantes
+- [x] Registrar eventos importantes
 
 ## 12. Testing
 
 - [x] Tests backend del flujo de reserva con pago
 - [x] Tests de webhook
 - [x] Tests de expiracion/vencimiento
+- [x] Tests de validacion de firma del webhook
 - [ ] E2E o scripts que validen:
   - [ ] creacion de reserva pendiente
   - [x] retorno aprobado

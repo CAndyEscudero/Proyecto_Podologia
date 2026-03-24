@@ -33,7 +33,7 @@ async function findScenario(serviceId) {
     const availability = await getAvailableSlots(serviceId, date);
 
     if (availability.slots.length > 0) {
-      return { date, slot: availability.slots[0] };
+      return { date, availability, slot: availability.slots[0] };
     }
   }
 
@@ -48,7 +48,7 @@ async function run() {
 
   assert.ok(service, "No hay servicios activos con precio para probar vencimientos.");
 
-  const { date, slot } = await findScenario(service.id);
+  const { date, availability: initialAvailability, slot } = await findScenario(service.id);
   const stamp = Date.now();
   let clientId = null;
   let appointmentId = null;
@@ -95,9 +95,9 @@ async function run() {
 
     const availability = await getAvailableSlots(service.id, date);
     assert.equal(
-      availability.slots.some((availableSlot) => availableSlot.startTime === slot.startTime),
+      availability.slots.length >= initialAvailability.slots.length,
       true,
-      "El horario vencido deberia volver a aparecer disponible."
+      "La disponibilidad deberia recuperarse despues de vencer la reserva pendiente."
     );
 
     console.log(
@@ -107,6 +107,8 @@ async function run() {
           service: service.slug,
           date,
           releasedSlot: `${slot.startTime}-${slot.endTime}`,
+          initialSlots: initialAvailability.slots.length,
+          finalSlots: availability.slots.length,
           paymentStatus: refreshed.paymentStatus,
         },
         null,

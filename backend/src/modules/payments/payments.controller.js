@@ -1,7 +1,19 @@
 const paymentService = require("./payments.service");
 const { env } = require("../../config/env");
+const { logPaymentAudit } = require("./payments.audit");
+const { validateMercadoPagoWebhookSignature } = require("./payments.security");
 
 async function mercadoPagoWebhookController(req, res) {
+  const signatureResult = validateMercadoPagoWebhookSignature(req, env.mercadoPagoWebhookSecret);
+  const dataId = signatureResult.dataId || req.body?.data?.id || req.body?.id || null;
+
+  logPaymentAudit("webhook.received", {
+    dataId,
+    signatureValidated: signatureResult.enabled,
+    requestId: signatureResult.requestId || req.get("x-request-id") || null,
+    topic: req.body?.type || req.body?.topic || null,
+  });
+
   await paymentService.processMercadoPagoWebhook(req.body);
   res.status(200).json({ received: true });
 }

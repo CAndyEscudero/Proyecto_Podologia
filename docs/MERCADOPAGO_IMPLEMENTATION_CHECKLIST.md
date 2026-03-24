@@ -55,13 +55,13 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] `EXPIRED`
   - [x] `CANCELLED`
 - [x] Separar estado del turno de estado del pago
-- [ ] Crear migracion Prisma
+- [x] Crear migracion Prisma
 - [ ] Actualizar seed si hace falta
 
 ## 4. Diseno de estados
 
 - [x] Definir estados del turno con pago
-- [ ] Documentar transiciones validas
+- [x] Documentar transiciones validas
 - [x] Mantener separados:
   - [x] `appointment.status`
   - [x] `paymentStatus`
@@ -120,7 +120,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] pendiente de pago
   - [x] senado
   - [x] confirmado
-- [ ] Ajustar filtros si hace falta
+- [x] Ajustar filtros si hace falta
 
 ## 9. Tipos y contratos
 
@@ -129,11 +129,11 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] responses de booking
   - [x] tipos de pago
 - [x] Extender contratos backend/frontend
-- [ ] Evitar `any` en todo lo nuevo
+- [x] Evitar `any` en todo lo nuevo
 
 ## 10. Expiracion y liberacion de reservas
 
-- [ ] Definir cuanto dura una reserva pendiente
+- [x] Definir cuanto dura una reserva pendiente
 - [x] Guardar `paymentExpiresAt`
 - [ ] Definir como se libera el horario si no se paga
 - [ ] Implementar una primera estrategia simple de vencimiento
@@ -161,23 +161,23 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 
 ## 13. Orden recomendado de implementacion
 
-- [ ] Documentar reglas de negocio y estados
-- [ ] Extender schema Prisma y migrar DB
+- [x] Documentar reglas de negocio y estados
+- [x] Extender schema Prisma y migrar DB
 - [x] Crear tipos y contratos de pago
 - [x] Crear modulo backend de pagos
 - [x] Crear endpoint de reserva con pago
 - [x] Crear webhook y confirmacion backend
 - [x] Ajustar booking UI
 - [x] Ajustar retorno de pago
-- [ ] Ajustar admin
+- [x] Ajustar admin
 - [ ] Probar casos borde
-- [ ] Recien despues pulir textos y UX
+- [x] Recien despues pulir textos y UX
 
 ## 14. Primer bloque para arrancar
 
 - [x] Agregar campos de pago al schema
 - [x] Crear enums y estados
-- [ ] Crear migracion Prisma
+- [x] Crear migracion Prisma
 - [x] Crear estructura `modules/payments`
 - [x] Agregar variables de entorno example
 - [x] Crear contratos TypeScript de pago en frontend
@@ -188,5 +188,5 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 - [x] Mantener la logica sensible en backend
 - [x] No romper el flujo actual hasta tener el nuevo funcionando
 - [x] Iterar por capas
-- [ ] Dejar trazabilidad para admin
+- [x] Dejar trazabilidad para admin
 - [ ] Facilitar testeo y futuras integraciones

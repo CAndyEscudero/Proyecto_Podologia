@@ -82,6 +82,9 @@ export function BookingForm() {
   const [pendingReservation, setPendingReservation] = useState<CreateAppointmentPaymentResponse | null>(null);
   const [step, setStep] = useState<BookingStep["id"]>(1);
   const [isClientSheetOpen, setIsClientSheetOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
   const [searchParams] = useSearchParams();
 
   const {
@@ -157,6 +160,27 @@ export function BookingForm() {
       handleServiceSelect(String(matchedService.id));
     }
   }, [searchParams, services, serviceId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = (event?: MediaQueryListEvent) => {
+      setIsMobileViewport(event ? event.matches : mediaQuery.matches);
+    };
+
+    syncViewport();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
@@ -634,12 +658,13 @@ export function BookingForm() {
                         data-testid="booking-slots-grid"
                         className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
                       >
-                        {slots.map((slot) => {
+                        {slots.map((slot, slotIndex) => {
                           const isSelected = startTime === slot.startTime;
+                          const slotKey = `${slot.startTime}-${slot.endTime}-${slotIndex}`;
 
                           return (
                             <button
-                              key={slot.startTime}
+                              key={slotKey}
                               type="button"
                               onClick={() => handleSlotChange(slot.startTime)}
                               data-testid={`booking-slot-${slot.startTime}`}
@@ -713,7 +738,7 @@ export function BookingForm() {
               </section>
             ) : null}
 
-            {step === 4 ? (
+            {step === 4 && !isMobileViewport ? (
               <section data-testid="booking-step-client" className="hidden min-w-full p-3.5 md:block md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -868,7 +893,7 @@ export function BookingForm() {
         </div>
       ) : null}
 
-      {step === 4 && !pendingReservation ? (
+      {step === 4 && isMobileViewport && !pendingReservation ? (
         <div
           className={[
             "fixed inset-0 z-40 bg-brand-ink/40 p-3 transition md:hidden",

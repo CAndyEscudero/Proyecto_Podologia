@@ -532,7 +532,6 @@ export function AppointmentsTable({
                 <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Turno</th>
                 <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Servicio</th>
                 <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Estado</th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Pago</th>
                 <th className="px-4 py-3 text-xs font-bold uppercase tracking-[0.16em]">Actualizacion</th>
                 <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-[0.16em]">Gestion</th>
               </tr>
@@ -571,15 +570,24 @@ export function AppointmentsTable({
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <StatusBadge status={appointment.status} />
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="min-w-[190px] space-y-2">
-                      <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
-                      <div className="text-xs text-slate-500">
-                        <p>Total: {formatBookingPrice(appointment.priceCents)}</p>
-                        <p>Sena: {formatBookingPrice(appointment.depositCents)}</p>
-                        <p>Referencia: {appointment.paymentReference || "Sin referencia"}</p>
+                    <div className="min-w-[240px] space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge status={appointment.status} />
+                        <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
+                      </div>
+                      <div className="rounded-[1rem] border border-slate-200/80 bg-slate-50/80 px-3 py-3 text-xs text-slate-500">
+                        <p>
+                          <span className="font-semibold text-slate-700">Total:</span>{" "}
+                          {formatBookingPrice(appointment.priceCents)}
+                        </p>
+                        <p className="mt-1">
+                          <span className="font-semibold text-slate-700">Sena:</span>{" "}
+                          {formatBookingPrice(appointment.depositCents)}
+                        </p>
+                        <p className="mt-1">
+                          <span className="font-semibold text-slate-700">Referencia:</span>{" "}
+                          {appointment.paymentReference || "Sin referencia"}
+                        </p>
                       </div>
                     </div>
                   </td>

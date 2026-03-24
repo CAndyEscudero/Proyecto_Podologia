@@ -6,6 +6,7 @@ const serviceRoutes = require("../modules/services/services.routes");
 const appointmentRoutes = require("../modules/appointments/appointments.routes");
 const availabilityRoutes = require("../modules/availability/availability.routes");
 const businessSettingsRoutes = require("../modules/business-settings/business-settings.routes");
+const paymentRoutes = require("../modules/payments/payments.routes");
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.use("/users", userRoutes);
 router.use("/clients", clientRoutes);
 router.use("/services", serviceRoutes);
 router.use("/appointments", appointmentRoutes);
+router.use("/payments", paymentRoutes);
 router.use("/availability", availabilityRoutes);
 router.use("/business-settings", businessSettingsRoutes);
 

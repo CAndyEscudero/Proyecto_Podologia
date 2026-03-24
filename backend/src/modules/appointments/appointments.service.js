@@ -6,6 +6,7 @@ const { upsertClientByEmailOrPhone } = require("../clients/clients.service");
 const {
   buildPendingPaymentWindow,
   calculateDepositCents,
+  createMercadoPagoPreference,
 } = require("../payments/payments.service");
 
 async function assertSlotAvailable({ serviceId, date, startTime, ignoredAppointmentId = null }) {
@@ -119,18 +120,34 @@ async function createPaymentReservation(payload) {
     },
   });
 
+  const paymentPreference = await createMercadoPagoPreference({
+    appointment,
+    client,
+    service,
+  });
+
+  const refreshedAppointment = await prisma.appointment.findUnique({
+    where: { id: appointment.id },
+    include: {
+      client: true,
+      service: true,
+    },
+  });
+
   return {
     message: "Reserva pendiente de pago creada correctamente",
-    appointment: serializeAppointment(appointment),
+    appointment: serializeAppointment(refreshedAppointment),
     paymentSummary: {
-      priceCents: appointment.priceCents,
-      depositCents: appointment.depositCents,
-      paymentStatus: appointment.paymentStatus,
-      paymentOption: appointment.paymentOption,
-      paymentExpiresAt: appointment.paymentExpiresAt
-        ? appointment.paymentExpiresAt.toISOString()
+      priceCents: refreshedAppointment.priceCents,
+      depositCents: refreshedAppointment.depositCents,
+      paymentStatus: refreshedAppointment.paymentStatus,
+      paymentOption: refreshedAppointment.paymentOption,
+      paymentExpiresAt: refreshedAppointment.paymentExpiresAt
+        ? refreshedAppointment.paymentExpiresAt.toISOString()
         : null,
     },
+    checkoutUrl: paymentPreference.checkoutUrl,
+    paymentOption: refreshedAppointment.paymentOption,
   };
 }
 

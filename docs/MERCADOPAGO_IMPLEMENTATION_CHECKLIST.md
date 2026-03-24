@@ -70,15 +70,15 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 
 - [x] Crear modulo nuevo:
   - [x] `backend/src/modules/payments/`
-- [ ] Crear helper o cliente de integracion Mercado Pago
-- [ ] Implementar creacion de preferencia
-- [ ] Implementar metadata para relacionar pago con turno
-- [ ] Guardar `preferenceId` y referencia externa
-- [ ] Agregar endpoint nuevo de reserva con pago
-- [ ] Agregar webhook:
-  - [ ] `POST /api/payments/webhook`
-- [ ] Validar pago consultando API de Mercado Pago desde backend
-- [ ] Actualizar turno solo desde webhook validado
+- [x] Crear helper o cliente de integracion Mercado Pago
+- [x] Implementar creacion de preferencia
+- [x] Implementar metadata para relacionar pago con turno
+- [x] Guardar `preferenceId` y referencia externa
+- [x] Agregar endpoint nuevo de reserva con pago
+- [x] Agregar webhook:
+  - [x] `POST /api/payments/webhook`
+- [x] Validar pago consultando API de Mercado Pago desde backend
+- [x] Actualizar turno solo desde webhook validado
 - [ ] Agregar logs minimos de auditoria
 
 ## 6. Flujo de reserva backend
@@ -88,8 +88,8 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 - [x] Validar slot
 - [x] Calcular total y seña
 - [x] Crear reserva/turno en estado pendiente
-- [ ] Crear preferencia de Mercado Pago
-- [ ] Devolver URL o `init_point`
+- [x] Crear preferencia de Mercado Pago
+- [x] Devolver URL o `init_point`
 - [x] Definir expiracion de reserva pendiente
 
 ## 7. Frontend publico

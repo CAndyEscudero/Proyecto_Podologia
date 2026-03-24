@@ -1,7 +1,6 @@
 import { http } from "../../../shared/api/http";
 import type {
   CreateAppointmentPaymentResponse,
-  CreateAppointmentResponse,
   AvailableSlotsResponse,
 } from "../../../shared/types/api";
 import type { Service } from "../../../shared/types/domain";
@@ -19,13 +18,6 @@ export async function getAvailableSlots(
   const { data } = await http.get<AvailableSlotsResponse>("/availability/slots", {
     params: { serviceId, date },
   });
-  return data;
-}
-
-export async function createAppointment(
-  payload: CreateAppointmentPayload
-): Promise<CreateAppointmentResponse> {
-  const { data } = await http.post<CreateAppointmentResponse>("/appointments", payload);
   return data;
 }
 

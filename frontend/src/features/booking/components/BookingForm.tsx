@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock3,
+  ExternalLink,
   LoaderCircle,
   MapPinned,
   Search,
@@ -20,12 +21,20 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "../../../shared/ui/button/Button";
-import type { ApiErrorResponse, CreateAppointmentResponse } from "../../../shared/types/api";
+import type {
+  ApiErrorResponse,
+  CreateAppointmentPaymentResponse,
+} from "../../../shared/types/api";
 import type { Service } from "../../../shared/types/domain";
-import { createAppointment } from "../api/booking.api";
+import { createPaymentReservation } from "../api/booking.api";
 import { BookingCalendar } from "./BookingCalendar";
 import { useBookingAvailability } from "../hooks/useBookingAvailability";
-import { formatBookingPrice } from "../utils/booking-formatters";
+import {
+  calculateDepositCents,
+  calculateRemainingCents,
+  formatBookingPrice,
+} from "../utils/booking-formatters";
+import { buildWhatsAppUrl } from "../../../shared/utils/whatsapp";
 import type {
   BookingFieldProps,
   BookingFormValues,
@@ -67,7 +76,7 @@ function getApiMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export function BookingForm() {
-  const [confirmation, setConfirmation] = useState<CreateAppointmentResponse | null>(null);
+  const [pendingReservation, setPendingReservation] = useState<CreateAppointmentPaymentResponse | null>(null);
   const [step, setStep] = useState<BookingStep["id"]>(1);
   const [searchParams] = useSearchParams();
 
@@ -115,6 +124,9 @@ export function BookingForm() {
   const selectedService = services.find((service: Service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
   const activeStep = steps.find((item) => item.id === step) || steps[0];
+  const depositCents = calculateDepositCents(selectedService?.priceCents);
+  const remainingCents = calculateRemainingCents(selectedService?.priceCents, depositCents);
+  const serviceNeedsManualQuote = Boolean(selectedService && !selectedService.priceCents);
 
   const serviceCards = useMemo(
     () =>
@@ -144,7 +156,7 @@ export function BookingForm() {
 
   const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
-      const response = await createAppointment({
+      const response = await createPaymentReservation({
         serviceId: Number(values.serviceId),
         date: values.date,
         startTime: values.startTime,
@@ -157,8 +169,8 @@ export function BookingForm() {
         },
       });
 
-      setConfirmation(response);
-      toast.success("Turno solicitado correctamente");
+      setPendingReservation(response);
+      toast.success("Reserva pendiente creada. Te redirigimos a Mercado Pago.");
       reset({
         serviceId: "",
         date: "",
@@ -171,8 +183,17 @@ export function BookingForm() {
       });
       clearSuggestions();
       setStep(1);
+
+      if (response.checkoutUrl) {
+        window.location.assign(response.checkoutUrl);
+        return;
+      }
+
+      toast("La reserva quedo creada, pero no encontramos la URL de pago.", {
+        icon: "⚠️",
+      });
     } catch (error) {
-      toast.error(getApiMessage(error, "No fue posible reservar el turno"));
+      toast.error(getApiMessage(error, "No fue posible iniciar la reserva con pago"));
     }
   };
 
@@ -213,7 +234,7 @@ export function BookingForm() {
 
   function handleResetFlow(): void {
     reset();
-    setConfirmation(null);
+    setPendingReservation(null);
     clearSuggestions();
     setStep(1);
   }
@@ -247,6 +268,12 @@ export function BookingForm() {
     handleDateChange(nextAvailableOption.date);
   }
 
+  const manualQuoteWhatsAppUrl = selectedService
+    ? buildWhatsAppUrl(
+        `Hola, quiero consultar el precio y reservar el servicio "${selectedService.name}".`
+      )
+    : buildWhatsAppUrl("Hola, quiero consultar un servicio y reservar un turno.");
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_360px] lg:items-start xl:grid-cols-[minmax(0,1fr)_384px] xl:gap-6">
       <div className="card-surface overflow-hidden bg-white/92">
@@ -268,7 +295,7 @@ export function BookingForm() {
                 (item.id === 1 && selectedService) ||
                 (item.id === 2 && date) ||
                 (item.id === 3 && startTime) ||
-                (item.id === 4 && confirmation);
+                (item.id === 4 && pendingReservation);
 
               return (
                 <div
@@ -573,7 +600,7 @@ export function BookingForm() {
                       Paso 4
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      Ya tenes todo elegido. Solo falta completar tus datos para enviar la solicitud.
+                      Ya tenes todo elegido. Completa tus datos y te redirigimos a Mercado Pago para abonar la sena del 50%.
                     </p>
                   </div>
                   <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToTimeStep}>
@@ -612,12 +639,29 @@ export function BookingForm() {
                   </div>
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <Button data-testid="booking-submit" type="submit" className="gap-2" disabled={isSubmitting}>
-                    {isSubmitting ? "Confirmando..." : "Confirmar solicitud"}
-                    {!isSubmitting ? <ArrowRight size={16} /> : null}
-                  </Button>
-                </div>
+                {serviceNeedsManualQuote ? (
+                  <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                    <p className="font-semibold">Este servicio todavia no tiene precio online configurado.</p>
+                    <p className="mt-2 leading-6">
+                      Para reservarlo, escribinos por WhatsApp y te ayudamos manualmente con el valor y la coordinacion.
+                    </p>
+                    <div className="mt-4">
+                      <a href={manualQuoteWhatsAppUrl} target="_blank" rel="noreferrer">
+                        <Button type="button" variant="secondary" className="gap-2">
+                          Consultar por WhatsApp
+                          <ExternalLink size={16} />
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 flex flex-wrap gap-4">
+                    <Button data-testid="booking-submit" type="submit" className="gap-2" disabled={isSubmitting}>
+                      {isSubmitting ? "Redirigiendo..." : "Reservar turno con sena"}
+                      {!isSubmitting ? <ArrowRight size={16} /> : null}
+                    </Button>
+                  </div>
+                )}
               </section>
             ) : null}
           </div>
@@ -631,17 +675,19 @@ export function BookingForm() {
             <h3 className="text-2xl font-display">Resumen de tu turno</h3>
           </div>
 
-          {confirmation ? (
+          {pendingReservation ? (
             <div className="mt-4 space-y-2 text-sm text-slate-700">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
-                <CheckCircle2 size={16} />
-                Turno cargado correctamente
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-amber-700">
+                <Clock3 size={16} />
+                Reserva pendiente de pago
               </div>
-              <p><strong>Codigo:</strong> #{confirmation.appointment.id}</p>
-              <p><strong>Servicio:</strong> {confirmation.appointment.service.name}</p>
-              <p><strong>Fecha:</strong> {confirmation.appointment.date}</p>
-              <p><strong>Horario:</strong> {confirmation.appointment.startTime}</p>
-              <p><strong>Estado:</strong> {confirmation.appointment.status}</p>
+              <p><strong>Codigo:</strong> #{pendingReservation.appointment.id}</p>
+              <p><strong>Servicio:</strong> {pendingReservation.appointment.service.name}</p>
+              <p><strong>Fecha:</strong> {pendingReservation.appointment.date}</p>
+              <p><strong>Horario:</strong> {pendingReservation.appointment.startTime}</p>
+              <p><strong>Estado de pago:</strong> {pendingReservation.paymentSummary.paymentStatus}</p>
+              <p><strong>Total:</strong> {formatBookingPrice(pendingReservation.paymentSummary.priceCents)}</p>
+              <p><strong>Sena 50%:</strong> {formatBookingPrice(pendingReservation.paymentSummary.depositCents)}</p>
               <div className="pt-4">
                 <Button type="button" variant="secondary" onClick={handleResetFlow}>
                   Reservar otro turno
@@ -688,7 +734,23 @@ export function BookingForm() {
                   <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
                   <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
                   <SummaryRow label="Finaliza" value={selectedSlot?.endTime || "Pendiente"} />
+                  <SummaryRow
+                    label="Total"
+                    value={selectedService ? formatBookingPrice(selectedService.priceCents) : "Pendiente"}
+                  />
+                  <SummaryRow label="Seña 50%" value={formatBookingPrice(depositCents)} />
+                  <SummaryRow label="Saldo restante" value={formatBookingPrice(remainingCents)} />
                 </div>
+              </div>
+
+              <div className="rounded-[1.25rem] border border-emerald-100 bg-emerald-50/70 px-4 py-4">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-700">
+                  Confirmacion de reserva
+                </p>
+                <p className="mt-2 text-sm leading-6 text-emerald-900">
+                  Para confirmar el turno te vamos a pedir una sena del 50%. El saldo restante lo abonas al momento
+                  de la atencion.
+                </p>
               </div>
 
               <div className="rounded-[1.25rem] border border-dashed border-rose-200 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-500">

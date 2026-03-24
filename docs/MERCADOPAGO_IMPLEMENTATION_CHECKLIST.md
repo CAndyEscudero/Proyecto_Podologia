@@ -2,21 +2,21 @@
 
 ## Objetivo
 
-Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, progresiva y sin romper la logica actual de turnos y disponibilidad.
+Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progresiva y sin romper la logica actual de turnos y disponibilidad.
 
 ## 1. Preparacion y criterios
 
 - [x] Confirmar regla de negocio exacta:
-  - [x] la seña sera el 50% del `priceCents`
+  - [x] la sena sera el 50% del `priceCents`
   - [x] definir que pasa si un servicio no tiene precio
   - [x] definir si el turno queda pendiente hasta webhook aprobado
-- [ ] Confirmar experiencia esperada:
-  - [ ] el usuario elige servicio, fecha y horario
-  - [ ] completa datos
-  - [ ] ve total, seña y saldo
-  - [ ] hace click en `Reservar turno`
-  - [ ] va a Mercado Pago
-  - [ ] vuelve con resultado
+- [x] Confirmar experiencia esperada:
+  - [x] el usuario elige servicio, fecha y horario
+  - [x] completa datos
+  - [x] ve total, sena y saldo
+  - [x] hace click en `Reservar turno`
+  - [x] va a Mercado Pago
+  - [x] vuelve con resultado
 - [x] Confirmar criterio de disponibilidad:
   - [x] no confirmar definitivamente el turno antes del pago aprobado
   - [x] definir si se crea una reserva temporal o un turno `PENDING_PAYMENT`
@@ -86,7 +86,7 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 - [x] Revisar `createAppointment` actual
 - [x] Crear endpoint nuevo, separado del flujo viejo
 - [x] Validar slot
-- [x] Calcular total y seña
+- [x] Calcular total y sena
 - [x] Crear reserva/turno en estado pendiente
 - [x] Crear preferencia de Mercado Pago
 - [x] Devolver URL o `init_point`
@@ -94,31 +94,31 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 
 ## 7. Frontend publico
 
-- [ ] Ajustar `BookingForm.tsx`
-- [ ] En el ultimo paso mostrar:
-  - [ ] precio total
-  - [ ] seña 50%
-  - [ ] saldo pendiente
-- [ ] Cambiar CTA final por:
-  - [ ] `Reservar turno`
-- [ ] Llamar al endpoint nuevo del backend
-- [ ] Redirigir a Mercado Pago
-- [ ] Crear manejo de retorno:
-  - [ ] pago aprobado
-  - [ ] pago pendiente
-  - [ ] pago rechazado
-- [ ] Mostrar mensajes claros y no ambiguos
+- [x] Ajustar `BookingForm.tsx`
+- [x] En el ultimo paso mostrar:
+  - [x] precio total
+  - [x] sena 50%
+  - [x] saldo pendiente
+- [x] Cambiar CTA final por:
+  - [x] `Reservar turno`
+- [x] Llamar al endpoint nuevo del backend
+- [x] Redirigir a Mercado Pago
+- [x] Crear manejo de retorno:
+  - [x] pago aprobado
+  - [x] pago pendiente
+  - [x] pago rechazado
+- [x] Mostrar mensajes claros y no ambiguos
 
 ## 8. Admin
 
 - [ ] Mostrar campos o badges nuevos en turnos:
   - [ ] estado de pago
-  - [ ] seña
+  - [ ] sena
   - [ ] total
   - [ ] referencia de pago si sirve
 - [ ] Permitir distinguir visualmente:
   - [ ] pendiente de pago
-  - [ ] señado
+  - [ ] senado
   - [ ] confirmado
 - [ ] Ajustar filtros si hace falta
 
@@ -134,16 +134,16 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 ## 10. Expiracion y liberacion de reservas
 
 - [ ] Definir cuanto dura una reserva pendiente
-- [ ] Guardar `paymentExpiresAt`
+- [x] Guardar `paymentExpiresAt`
 - [ ] Definir como se libera el horario si no se paga
 - [ ] Implementar una primera estrategia simple de vencimiento
 
 ## 11. Seguridad
 
 - [ ] Validar webhook correctamente
-- [ ] No confiar en parametros del frontend para marcar pago aprobado
-- [ ] Reconsultar estado del pago desde backend
-- [ ] No exponer access token
+- [x] No confiar en parametros del frontend para marcar pago aprobado
+- [x] Reconsultar estado del pago desde backend
+- [x] No exponer access token
 - [ ] Registrar eventos importantes
 
 ## 12. Testing
@@ -163,15 +163,15 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 
 - [ ] Documentar reglas de negocio y estados
 - [ ] Extender schema Prisma y migrar DB
-- [ ] Crear tipos y contratos de pago
-- [ ] Crear modulo backend de pagos
-- [ ] Crear endpoint de reserva con pago
-- [ ] Crear webhook y confirmacion backend
-- [ ] Ajustar booking UI
-- [ ] Ajustar retorno de pago
+- [x] Crear tipos y contratos de pago
+- [x] Crear modulo backend de pagos
+- [x] Crear endpoint de reserva con pago
+- [x] Crear webhook y confirmacion backend
+- [x] Ajustar booking UI
+- [x] Ajustar retorno de pago
 - [ ] Ajustar admin
 - [ ] Probar casos borde
-- [ ] Recién despues pulir textos y UX
+- [ ] Recien despues pulir textos y UX
 
 ## 14. Primer bloque para arrancar
 
@@ -185,8 +185,8 @@ Implementar reserva con seña del 50% usando Mercado Pago, de forma segura, prog
 ## 15. Criterios de implementacion
 
 - [x] Separar estado de turno y estado de pago
-- [ ] Mantener la logica sensible en backend
-- [ ] No romper el flujo actual hasta tener el nuevo funcionando
-- [ ] Iterar por capas
+- [x] Mantener la logica sensible en backend
+- [x] No romper el flujo actual hasta tener el nuevo funcionando
+- [x] Iterar por capas
 - [ ] Dejar trazabilidad para admin
 - [ ] Facilitar testeo y futuras integraciones

@@ -1,6 +1,8 @@
 export type UserRole = "OWNER" | "ADMIN" | "STAFF";
 
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELED" | "COMPLETED";
+export type PaymentStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+export type PaymentOption = "DEPOSIT" | "FULL";
 
 export type AvailabilityRuleType = "WORKING_HOURS" | "BREAK";
 
@@ -45,6 +47,15 @@ export interface Appointment {
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
+  paymentStatus: PaymentStatus;
+  paymentOption: PaymentOption;
+  paymentProvider: string | null;
+  paymentReference: string | null;
+  paymentPreferenceId: string | null;
+  paymentApprovedAt?: string | null;
+  paymentExpiresAt?: string | null;
+  priceCents: number | null;
+  depositCents: number | null;
   notes: string | null;
   source: string;
   createdAt?: string;

@@ -20,6 +20,19 @@ enum AppointmentStatus {
   COMPLETED
 }
 
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentOption {
+  DEPOSIT
+  FULL
+}
+
 enum AvailabilityRuleType {
   WORKING_HOURS
   BREAK
@@ -62,21 +75,31 @@ model Service {
 }
 
 model Appointment {
-  id          Int               @id @default(autoincrement())
-  clientId    Int
-  serviceId   Int
-  date        DateTime          @db.Date
-  startTime   String
-  endTime     String
-  status      AppointmentStatus @default(PENDING)
-  notes       String?           @db.Text
-  source      String            @default("web")
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  client      Client            @relation(fields: [clientId], references: [id])
-  service     Service           @relation(fields: [serviceId], references: [id])
+  id                  Int               @id @default(autoincrement())
+  clientId            Int
+  serviceId           Int
+  date                DateTime          @db.Date
+  startTime           String
+  endTime             String
+  status              AppointmentStatus @default(PENDING)
+  paymentStatus       PaymentStatus     @default(PENDING)
+  paymentOption       PaymentOption     @default(DEPOSIT)
+  paymentProvider     String?
+  paymentReference    String?           @unique
+  paymentPreferenceId String?           @unique
+  paymentApprovedAt   DateTime?
+  paymentExpiresAt    DateTime?
+  priceCents          Int?
+  depositCents        Int?
+  notes               String?           @db.Text
+  source              String            @default("web")
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  client              Client            @relation(fields: [clientId], references: [id])
+  service             Service           @relation(fields: [serviceId], references: [id])
 
   @@index([date, startTime])
+  @@index([paymentStatus, paymentExpiresAt])
 }
 
 model AvailabilityRule {

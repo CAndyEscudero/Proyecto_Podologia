@@ -111,15 +111,15 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 
 ## 8. Admin
 
-- [ ] Mostrar campos o badges nuevos en turnos:
-  - [ ] estado de pago
-  - [ ] sena
-  - [ ] total
+- [x] Mostrar campos o badges nuevos en turnos:
+  - [x] estado de pago
+  - [x] sena
+  - [x] total
   - [ ] referencia de pago si sirve
-- [ ] Permitir distinguir visualmente:
-  - [ ] pendiente de pago
-  - [ ] senado
-  - [ ] confirmado
+- [x] Permitir distinguir visualmente:
+  - [x] pendiente de pago
+  - [x] senado
+  - [x] confirmado
 - [ ] Ajustar filtros si hace falta
 
 ## 9. Tipos y contratos

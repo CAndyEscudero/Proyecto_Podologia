@@ -8,6 +8,7 @@ import {
   CalendarCheck2,
   CalendarClock,
   Clock3,
+  CreditCard,
   FilePenLine,
   PhoneCall,
   Stethoscope,
@@ -18,6 +19,7 @@ import {
 import { getAvailableSlots } from "../../availability/api/availability.api";
 import { Button } from "../../../../shared/ui/button/Button";
 import type { AvailabilitySlot } from "../../../../shared/types/domain";
+import { formatBookingPrice } from "../../../booking/utils/booking-formatters";
 import type {
   Appointment,
   AppointmentCreateFormValues,
@@ -61,6 +63,14 @@ const statusLabels = {
   CONFIRMED: "Confirmado",
   CANCELED: "Cancelado",
   COMPLETED: "Realizado",
+} as const;
+
+const paymentStatusLabels = {
+  PENDING: "Pendiente",
+  APPROVED: "Aprobado",
+  REJECTED: "Rechazado",
+  EXPIRED: "Vencido",
+  CANCELLED: "Cancelado",
 } as const;
 
 interface FieldProps {
@@ -441,6 +451,21 @@ export function AppointmentsManager({
             <InfoRow label="Fecha" value={selectedAppointment.date} icon={CalendarCheck2} />
             <InfoRow label="Horario" value={`${selectedAppointment.startTime} - ${selectedAppointment.endTime}`} icon={Clock3} />
             <InfoRow label="Estado" value={statusLabels[selectedAppointment.status]} icon={FilePenLine} />
+            <InfoRow
+              label="Pago"
+              value={paymentStatusLabels[selectedAppointment.paymentStatus]}
+              icon={CreditCard}
+            />
+            <InfoRow
+              label="Total servicio"
+              value={formatBookingPrice(selectedAppointment.priceCents)}
+              icon={CreditCard}
+            />
+            <InfoRow
+              label="Sena reservada"
+              value={formatBookingPrice(selectedAppointment.depositCents)}
+              icon={CreditCard}
+            />
             <InfoRow label="Telefono" value={selectedAppointment.client.phone} icon={PhoneCall} />
             <InfoRow label="Email" value={selectedAppointment.client.email || "Sin email"} icon={FilePenLine} />
             <InfoRow label="Notas cliente" value={selectedAppointment.client.notes || "Sin notas"} icon={FilePenLine} />

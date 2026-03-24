@@ -157,8 +157,8 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
   - [x] retorno aprobado
   - [x] retorno pendiente
   - [x] retorno rechazado
-  - [ ] que un pago fallido no deje turno confirmado
-- [ ] Revisar regresion de disponibilidad
+  - [x] que un pago fallido no deje turno confirmado
+- [x] Revisar regresion de disponibilidad
 
 ## 13. Orden recomendado de implementacion
 

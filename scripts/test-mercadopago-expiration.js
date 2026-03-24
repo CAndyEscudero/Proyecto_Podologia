@@ -5,7 +5,10 @@ process.env.DATABASE_URL = process.env.DATABASE_URL || requireLocalEnv("DATABASE
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
 
 const { prisma } = require("../backend/src/config/prisma");
-const { getAvailableSlots } = require("../backend/src/modules/availability/availability.service");
+const {
+  getAvailabilityContext,
+  getAvailableSlots,
+} = require("../backend/src/modules/availability/availability.service");
 const { expirePendingReservations } = require("../backend/src/modules/payments/payments.service");
 
 function findNextBusinessDate(targetWeekday) {
@@ -94,10 +97,12 @@ async function run() {
     assert.equal(refreshed.paymentStatus, "EXPIRED", "El pago vencido deberia quedar marcado como EXPIRED.");
 
     const availability = await getAvailableSlots(service.id, date);
+    const contextAfterExpiration = await getAvailabilityContext(service.id, date);
+
     assert.equal(
-      availability.slots.length >= initialAvailability.slots.length,
-      true,
-      "La disponibilidad deberia recuperarse despues de vencer la reserva pendiente."
+      contextAfterExpiration.appointments.some((activeAppointment) => activeAppointment.id === appointment.id),
+      false,
+      "La reserva vencida ya no deberia bloquear la disponibilidad activa."
     );
 
     console.log(
@@ -109,6 +114,7 @@ async function run() {
           releasedSlot: `${slot.startTime}-${slot.endTime}`,
           initialSlots: initialAvailability.slots.length,
           finalSlots: availability.slots.length,
+          activeAppointmentsAfterExpiration: contextAfterExpiration.appointments.length,
           paymentStatus: refreshed.paymentStatus,
         },
         null,

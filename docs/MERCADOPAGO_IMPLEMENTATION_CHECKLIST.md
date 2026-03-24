@@ -153,7 +153,7 @@ Implementar reserva con sena del 50% usando Mercado Pago, de forma segura, progr
 - [x] Tests de expiracion/vencimiento
 - [x] Tests de validacion de firma del webhook
 - [ ] E2E o scripts que validen:
-  - [ ] creacion de reserva pendiente
+  - [x] creacion de reserva pendiente
   - [x] retorno aprobado
   - [x] retorno pendiente
   - [x] retorno rechazado

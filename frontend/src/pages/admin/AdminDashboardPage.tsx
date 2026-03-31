@@ -36,6 +36,7 @@ import type { UpdateBusinessSettingsPayload } from "../../features/admin/busines
 import { getMe } from "../../features/admin/auth/api/auth.api";
 import { createService, deleteService, getServices, updateService } from "../../features/admin/services/api/services.api";
 import { ServicesManager } from "../../features/admin/services/components/ServicesManager";
+import { TeamManager } from "../../features/admin/team/components/TeamManager";
 import type {
   AppointmentFilters,
   AppointmentManagerMode,
@@ -47,14 +48,34 @@ import type {
   RescheduleAppointmentPayload,
   UpdateAppointmentPayload,
 } from "../../features/admin/appointments/types/appointments.types";
-import type { Service, AvailabilityRule, BlockedDate, BusinessSettings, Appointment, User } from "../../shared/types/domain";
+import type {
+  Service,
+  AvailabilityRule,
+  BlockedDate,
+  BusinessSettings,
+  Appointment,
+  Professional,
+  User,
+} from "../../shared/types/domain";
 import type { CreateServicePayload, UpdateServicePayload } from "../../features/admin/services/types/services.types";
+import type {
+  CreateProfessionalPayload,
+  UpdateProfessionalPayload,
+} from "../../features/admin/team/types/team.types";
 import type { ApiErrorResponse } from "../../shared/types/api";
+import { clearStoredToken } from "../../shared/utils/auth";
+import {
+  getNextProfessionalId,
+  getStoredProfessionals,
+  saveStoredProfessionals,
+  sortProfessionals,
+} from "../../shared/utils/professionals";
 
 export function AdminDashboardPage() {
-  const [, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>(() => getStoredProfessionals());
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
@@ -76,6 +97,9 @@ export function AdminDashboardPage() {
   const [isSavingService, setIsSavingService] = useState(false);
   const [isDeletingServiceId, setIsDeletingServiceId] = useState<number | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [isSavingProfessional, setIsSavingProfessional] = useState(false);
+  const [isUpdatingProfessionalId, setIsUpdatingProfessionalId] = useState<number | null>(null);
+  const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const [isSavingRule, setIsSavingRule] = useState(false);
   const [isDeletingRuleId, setIsDeletingRuleId] = useState<number | null>(null);
   const [editingRule, setEditingRule] = useState<AvailabilityRule | null>(null);
@@ -124,6 +148,10 @@ export function AdminDashboardPage() {
       void fetchAppointments();
     }
   }, [filters, activeTab]);
+
+  useEffect(() => {
+    saveStoredProfessionals(professionals);
+  }, [professionals]);
 
   async function loadAppointments(activeFilters: AppointmentFilters = filters) {
     try {
@@ -238,6 +266,12 @@ export function AdminDashboardPage() {
         badge: String(services.length).padStart(2, "0"),
       },
       {
+        id: "team",
+        label: "Equipo",
+        copy: "Profesionales visibles en reserva",
+        badge: String(professionals.filter((professional) => professional.isActive).length).padStart(2, "0"),
+      },
+      {
         id: "availability",
         label: "Disponibilidad",
         copy: "Reglas y fechas bloqueadas",
@@ -250,7 +284,7 @@ export function AdminDashboardPage() {
         badge: businessSettings?.bookingWindowDays ? `${businessSettings.bookingWindowDays}d` : null,
       },
     ],
-    [appointments.length, businessSettings?.bookingWindowDays, rules.length, services.length]
+    [appointments.length, businessSettings?.bookingWindowDays, professionals, rules.length, services.length]
   );
 
   const activeNavigationItem =
@@ -385,6 +419,107 @@ export function AdminDashboardPage() {
     }
   }
 
+  async function handleCreateProfessional(
+    payload: CreateProfessionalPayload,
+    onSuccess?: () => void
+  ) {
+    try {
+      setIsSavingProfessional(true);
+      const timestamp = new Date().toISOString();
+      const created: Professional = {
+        id: getNextProfessionalId(professionals),
+        fullName: payload.fullName.trim(),
+        bio: payload.bio.trim(),
+        acceptsAllServices: payload.acceptsAllServices,
+        serviceIds: payload.acceptsAllServices ? [] : [...payload.serviceIds].sort((a, b) => a - b),
+        isActive: payload.isActive ?? true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      setProfessionals((current) => sortProfessionals([...current, created]));
+      toast.success("Profesional creado");
+      onSuccess?.();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "No se pudo crear el profesional"));
+    } finally {
+      setIsSavingProfessional(false);
+    }
+  }
+
+  async function handleUpdateProfessional(
+    id: number,
+    payload: UpdateProfessionalPayload,
+    onSuccess?: () => void
+  ) {
+    try {
+      setIsSavingProfessional(true);
+      setProfessionals((current) =>
+        sortProfessionals(
+          current.map((professional) =>
+            professional.id === id
+              ? {
+                  ...professional,
+                  ...payload,
+                  fullName: payload.fullName?.trim() ?? professional.fullName,
+                  bio: payload.bio?.trim() ?? professional.bio,
+                  serviceIds: payload.acceptsAllServices
+                    ? []
+                    : payload.serviceIds
+                      ? [...payload.serviceIds].sort((left, right) => left - right)
+                      : professional.serviceIds,
+                  updatedAt: new Date().toISOString(),
+                }
+              : professional
+          )
+        )
+      );
+      setEditingProfessional(null);
+      toast.success("Profesional actualizado");
+      onSuccess?.();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "No se pudo actualizar el profesional"));
+    } finally {
+      setIsSavingProfessional(false);
+    }
+  }
+
+  async function handleToggleProfessionalStatus(professional: Professional) {
+    try {
+      setIsUpdatingProfessionalId(professional.id);
+      const nextIsActive = !professional.isActive;
+      const timestamp = new Date().toISOString();
+
+      setProfessionals((current) =>
+        sortProfessionals(
+          current.map((item) =>
+            item.id === professional.id
+              ? {
+                  ...item,
+                  isActive: nextIsActive,
+                  updatedAt: timestamp,
+                }
+              : item
+          )
+        )
+      );
+
+      if (editingProfessional?.id === professional.id) {
+        setEditingProfessional({
+          ...editingProfessional,
+          isActive: nextIsActive,
+          updatedAt: timestamp,
+        });
+      }
+
+      toast.success(nextIsActive ? "Profesional activado" : "Profesional desactivado");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "No se pudo actualizar el profesional"));
+    } finally {
+      setIsUpdatingProfessionalId(null);
+    }
+  }
+
   async function handleCreateRule(payload: CreateAvailabilityRulePayload, onSuccess?: () => void) {
     try {
       setIsSavingRule(true);
@@ -501,6 +636,12 @@ export function AdminDashboardPage() {
         items={navigationItems}
         activeTab={activeTab}
         onChange={handleSidebarChange}
+        userName={user?.fullName}
+        businessName={businessSettings?.businessName}
+        onLogout={() => {
+          clearStoredToken();
+          window.location.href = "/admin/login";
+        }}
         showCloseButton
         onClose={() => setIsSidebarOpen(false)}
         className={`fixed inset-y-0 left-0 z-50 w-[290px] max-w-[85vw] overflow-y-auto bg-[#fcf8f8] p-4 transition-transform duration-300 lg:hidden ${
@@ -513,36 +654,19 @@ export function AdminDashboardPage() {
           items={navigationItems}
           activeTab={activeTab}
           onChange={handleSidebarChange}
+          userName={user?.fullName}
+          businessName={businessSettings?.businessName}
+          onLogout={() => {
+            clearStoredToken();
+            window.location.href = "/admin/login";
+          }}
           className="hidden lg:block lg:sticky lg:top-6"
         />
 
         <div className="min-w-0 space-y-5">
-          <div className="rounded-[2rem] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(248,221,229,0.4),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,246,0.96))] px-4 py-5 shadow-[0_30px_60px_-42px_rgba(95,67,77,0.42)] md:px-6 md:py-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-3xl">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.26em] text-brand-wine">
-                  Panel administrativo
-                </p>
-                <h1 className="mt-2 font-display text-[2rem] leading-none text-brand-ink md:text-[2.5rem]">
-                  Agenda clara para operar sin friccion
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 md:text-[15px]">
-                  Una vista pensada para recepcion y gestion diaria: primero el contexto, despues los filtros y por ultimo la accion.
-                </p>
-              </div>
-
-              <div className="hidden rounded-[1.4rem] border border-white/80 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm md:block">
-                <div className="flex items-center gap-2 text-brand-wine">
-                  <CalendarClock size={16} />
-                  <span className="text-xs font-extrabold uppercase tracking-[0.18em]">Foco actual</span>
-                </div>
-                <p className="mt-2 font-semibold text-brand-ink">{activeNavigationItem.label}</p>
-                <p className="mt-1 text-xs text-slate-500">{activeNavigationItem.copy}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 rounded-[1.45rem] border border-rose-100 bg-white/82 px-4 py-3 text-sm text-slate-600 shadow-soft lg:hidden">
+          <div className="h-[84px] lg:hidden" />
+          <div className="fixed left-3 right-3 top-3 z-30 lg:hidden">
+            <div className="flex items-center justify-between gap-3 rounded-[1.3rem] border border-rose-100/90 bg-white/95 px-4 py-3 text-sm text-slate-600 shadow-[0_18px_36px_-28px_rgba(90,64,74,0.35)] backdrop-blur">
             <div className="min-w-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Seccion activa</p>
               <p className="truncate font-semibold text-brand-ink">{activeNavigationItem.label}</p>
@@ -565,6 +689,7 @@ export function AdminDashboardPage() {
               </button>
             </div>
           </div>
+          </div>
 
           {activeTab === "appointmentCreate" || activeTab === "appointmentManage" ? (
             <div className="space-y-3">
@@ -575,6 +700,41 @@ export function AdminDashboardPage() {
                 </div>
               </div>
               <AdminSummary items={summaryItems} />
+            </div>
+          ) : null}
+
+          {activeTab === "appointmentCreate" || activeTab === "appointmentManage" ? (
+            <div className="rounded-[1.3rem] border border-slate-200 bg-white p-1.5 shadow-[0_18px_32px_-28px_rgba(90,64,74,0.18)]">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("appointmentCreate");
+                    setAppointmentMode("create");
+                  }}
+                  className={`inline-flex min-h-11 items-center rounded-[1rem] px-4 text-sm font-semibold transition ${
+                    activeTab === "appointmentCreate"
+                      ? "bg-brand-wine text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-brand-ink"
+                  }`}
+                >
+                  Alta manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("appointmentManage");
+                    setAppointmentMode(selectedAppointment ? appointmentMode : "edit");
+                  }}
+                  className={`inline-flex min-h-11 items-center rounded-[1rem] px-4 text-sm font-semibold transition ${
+                    activeTab === "appointmentManage"
+                      ? "bg-brand-wine text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-brand-ink"
+                  }`}
+                >
+                  Gestion de turnos
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -633,51 +793,60 @@ export function AdminDashboardPage() {
             </div>
           ) : null}
 
-          {(activeTab === "services" || activeTab === "availability" || activeTab === "business") ? (
-            <div className="min-w-0 rounded-[2rem] border border-rose-100/80 bg-white/82 p-3 shadow-soft backdrop-blur md:p-4">
-              <div className="min-w-0 rounded-[1.7rem] border border-white/75 bg-gradient-to-br from-white via-white to-rose-50/45 px-4 py-5 md:px-5 md:py-6">
-                {activeTab === "services" ? (
-                  <ServicesManager
-                    services={services}
-                    onCreate={handleCreateService}
-                    onUpdate={handleUpdateService}
-                    onDelete={handleDeleteService}
-                    isSaving={isSavingService}
-                    isDeletingId={isDeletingServiceId}
-                    editingService={editingService}
-                    onEdit={setEditingService}
-                    onCancelEdit={() => setEditingService(null)}
-                  />
-                ) : null}
+          {activeTab === "services" ? (
+            <ServicesManager
+              services={services}
+              onCreate={handleCreateService}
+              onUpdate={handleUpdateService}
+              onDelete={handleDeleteService}
+              isSaving={isSavingService}
+              isDeletingId={isDeletingServiceId}
+              editingService={editingService}
+              onEdit={setEditingService}
+              onCancelEdit={() => setEditingService(null)}
+            />
+          ) : null}
 
-                {activeTab === "availability" ? (
-                  <AvailabilityManager
-                    rules={rules}
-                    blockedDates={blockedDates}
-                    onCreateRule={handleCreateRule}
-                    onUpdateRule={handleUpdateRule}
-                    onDeleteRule={handleDeleteRule}
-                    onCreateBlockedDate={handleCreateBlockedDate}
-                    onDeleteBlockedDate={handleDeleteBlockedDate}
-                    isSavingRule={isSavingRule}
-                    isDeletingRuleId={isDeletingRuleId}
-                    isSavingBlockedDate={isSavingBlockedDate}
-                    isDeletingBlockedDateId={isDeletingBlockedDateId}
-                    editingRule={editingRule}
-                    onEditRule={setEditingRule}
-                    onCancelEditRule={() => setEditingRule(null)}
-                  />
-                ) : null}
+          {activeTab === "team" ? (
+            <TeamManager
+              professionals={professionals}
+              services={services}
+              onCreate={handleCreateProfessional}
+              onUpdate={handleUpdateProfessional}
+              onToggleStatus={handleToggleProfessionalStatus}
+              isSaving={isSavingProfessional}
+              isUpdatingId={isUpdatingProfessionalId}
+              editingProfessional={editingProfessional}
+              onEdit={setEditingProfessional}
+              onCancelEdit={() => setEditingProfessional(null)}
+            />
+          ) : null}
 
-                {activeTab === "business" ? (
-                  <BusinessSettingsPanel
-                    settings={businessSettings}
-                    onSave={handleUpdateBusinessSettings}
-                    isSaving={isSavingBusinessSettings}
-                  />
-                ) : null}
-              </div>
-            </div>
+          {activeTab === "availability" ? (
+            <AvailabilityManager
+              rules={rules}
+              blockedDates={blockedDates}
+              onCreateRule={handleCreateRule}
+              onUpdateRule={handleUpdateRule}
+              onDeleteRule={handleDeleteRule}
+              onCreateBlockedDate={handleCreateBlockedDate}
+              onDeleteBlockedDate={handleDeleteBlockedDate}
+              isSavingRule={isSavingRule}
+              isDeletingRuleId={isDeletingRuleId}
+              isSavingBlockedDate={isSavingBlockedDate}
+              isDeletingBlockedDateId={isDeletingBlockedDateId}
+              editingRule={editingRule}
+              onEditRule={setEditingRule}
+              onCancelEditRule={() => setEditingRule(null)}
+            />
+          ) : null}
+
+          {activeTab === "business" ? (
+            <BusinessSettingsPanel
+              settings={businessSettings}
+              onSave={handleUpdateBusinessSettings}
+              isSaving={isSavingBusinessSettings}
+            />
           ) : null}
         </div>
       </section>

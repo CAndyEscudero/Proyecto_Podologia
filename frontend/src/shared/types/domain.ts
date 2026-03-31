@@ -37,6 +37,17 @@ export interface Service {
   updatedAt?: string;
 }
 
+export interface Professional {
+  id: number;
+  fullName: string;
+  bio: string;
+  acceptsAllServices: boolean;
+  serviceIds: number[];
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Appointment {
   id: number;
   clientId: number;

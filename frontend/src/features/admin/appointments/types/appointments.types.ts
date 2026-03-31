@@ -1,5 +1,14 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { Appointment, AppointmentStatus, AvailabilityRule, BlockedDate, BusinessSettings, Service, User } from "../../../../shared/types/domain";
+import type {
+  Appointment,
+  AppointmentStatus,
+  AvailabilityRule,
+  BlockedDate,
+  BusinessSettings,
+  Professional,
+  Service,
+  User,
+} from "../../../../shared/types/domain";
 import type { AdminNavigationItem } from "../../navigation/types/navigation.types";
 import type { CreateAvailabilityRulePayload, CreateBlockedDatePayload, UpdateAvailabilityRulePayload } from "../../availability/types/availability.types";
 import type { UpdateBusinessSettingsPayload } from "../../business-settings/types/business-settings.types";
@@ -132,7 +141,13 @@ export interface AppointmentsManagerProps {
   availableModes?: AppointmentManagerMode[];
 }
 
-export type DashboardTab = "appointmentCreate" | "appointmentManage" | "services" | "availability" | "business";
+export type DashboardTab =
+  | "appointmentCreate"
+  | "appointmentManage"
+  | "services"
+  | "team"
+  | "availability"
+  | "business";
 
 export interface DashboardSummaryItem {
   label: string;
@@ -143,6 +158,7 @@ export interface DashboardSummaryItem {
 export interface AdminDashboardState {
   appointments: Appointment[];
   services: Service[];
+  professionals: Professional[];
   rules: AvailabilityRule[];
   blockedDates: BlockedDate[];
   businessSettings: BusinessSettings | null;
@@ -164,7 +180,7 @@ export interface AdminDashboardContextResponse {
 }
 
 export interface DashboardNavigationItem extends AdminNavigationItem {
-  id: "appointments" | "services" | "availability" | "business";
+  id: "appointments" | "services" | "team" | "availability" | "business";
 }
 
 export interface HandleCreateService {

@@ -331,13 +331,13 @@ export function AppointmentsManager({
         : "Selecciona un turno desde gestion para continuar.";
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
+    <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white shadow-[0_22px_50px_-36px_rgba(90,64,74,0.2)]">
+        <div className="border-b border-slate-200/80 px-5 py-5 md:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="max-w-2xl">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-brand-wine">
                   {mode === "create" ? (
                     <CalendarCheck2 className="h-5 w-5" />
                   ) : mode === "edit" ? (
@@ -350,14 +350,14 @@ export function AppointmentsManager({
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
                     Gestion puntual
                   </p>
-                  <h2 className="mt-1 text-2xl font-semibold text-brand-ink">{modeTitle[mode]}</h2>
+                  <h2 className="mt-1 text-[1.7rem] font-semibold text-brand-ink">{modeTitle[mode]}</h2>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600">{modeDescription}</p>
             </div>
 
             {visibleModes.length > 1 ? (
-              <div className="flex flex-wrap gap-2 rounded-[1.35rem] border border-rose-100 bg-white/85 p-2 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)]">
+              <div className="flex flex-wrap gap-2 rounded-[1.1rem] border border-slate-200 bg-slate-50/70 p-2">
                 {visibleModes.includes("create") ? (
                   <Button type="button" variant={mode === "create" ? "primary" : "secondary"} className="min-h-10 px-4 text-xs" onClick={() => onModeChange("create")}>
                     Nuevo manual
@@ -378,7 +378,7 @@ export function AppointmentsManager({
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {mode === "create" ? (
             <AppointmentCreateForm
               form={createForm}
@@ -422,9 +422,9 @@ export function AppointmentsManager({
         </div>
       </div>
 
-      <div className="card-surface overflow-hidden px-6 py-5">
+      <div className="overflow-hidden rounded-[1.7rem] border border-slate-200/80 bg-white px-5 py-5 shadow-[0_22px_50px_-36px_rgba(90,64,74,0.2)] md:px-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-brand-wine">
             <UserRound className="h-5 w-5" />
           </span>
           <div>
@@ -435,7 +435,7 @@ export function AppointmentsManager({
           </div>
         </div>
         {selectedAppointment ? (
-          <div className="mt-5 grid gap-3 text-sm text-slate-600">
+          <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
             <InfoRow label="Paciente" value={`${selectedAppointment.client.firstName} ${selectedAppointment.client.lastName}`} icon={UserRound} />
             <InfoRow label="Servicio" value={selectedAppointment.service.name} icon={Stethoscope} />
             <InfoRow label="Fecha" value={selectedAppointment.date} icon={CalendarCheck2} />
@@ -465,7 +465,7 @@ function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmit
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div className="rounded-[1.5rem] border border-rose-100/80 bg-rose-50/55 px-4 py-4 text-sm text-slate-600">
+      <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/75 px-4 py-4 text-sm text-slate-600">
         Usa este formulario para cargar turnos de mostrador, telefono o WhatsApp sin salir del
         flujo diario.
       </div>
@@ -488,8 +488,8 @@ function AppointmentCreateForm({ form, services, slots, isLoadingSlots, isSubmit
             <option value="">
               {isLoadingSlots ? "Cargando..." : slots.length ? "Selecciona un horario" : "Sin horarios disponibles"}
             </option>
-            {slots.map((slot) => (
-              <option key={slot.startTime} value={slot.startTime}>
+            {slots.map((slot, index) => (
+              <option key={`${slot.startTime}-${slot.endTime}-${index}`} value={slot.startTime}>
                 {slot.startTime} - {slot.endTime}
               </option>
             ))}
@@ -532,7 +532,7 @@ function AppointmentEditForm({ form, appointment, isSubmitting, isDeleting, onSu
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div className="rounded-[1.5rem] border border-rose-100/80 bg-rose-50/55 px-4 py-4 text-sm text-slate-600">
+      <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/75 px-4 py-4 text-sm text-slate-600">
         Ajusta los datos del paciente y el estado del turno sin perder visibilidad de la agenda.
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -592,7 +592,7 @@ function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, i
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div className="rounded-[1.5rem] border border-rose-100 bg-rose-50/40 px-4 py-4 text-sm text-slate-600">
+      <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50/75 px-4 py-4 text-sm text-slate-600">
         <p>
           <strong className="text-brand-ink">Turno actual:</strong> {appointment.date} - {appointment.startTime} - {appointment.endTime}
         </p>
@@ -610,8 +610,8 @@ function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, i
             <option value="">
               {isLoadingSlots ? "Cargando..." : slots.length ? "Selecciona un horario" : "Sin horarios disponibles"}
             </option>
-            {slots.map((slot) => (
-              <option key={slot.startTime} value={slot.startTime}>
+            {slots.map((slot, index) => (
+              <option key={`${slot.startTime}-${slot.endTime}-${index}`} value={slot.startTime}>
                 {slot.startTime} - {slot.endTime}
               </option>
             ))}
@@ -628,7 +628,7 @@ function AppointmentRescheduleForm({ form, appointment, slots, isLoadingSlots, i
 
 function EmptyManagerState({ message }: EmptyManagerStateProps) {
   return (
-    <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50/40 px-5 py-8 text-sm text-slate-500">
+    <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-sm text-slate-500">
       {message}
     </div>
   );
@@ -636,7 +636,7 @@ function EmptyManagerState({ message }: EmptyManagerStateProps) {
 
 function InfoRow({ label, value, icon: Icon }: InfoRowProps) {
   return (
-    <div className="rounded-[1.25rem] border border-rose-100/80 bg-white px-4 py-4 shadow-[0_18px_45px_-40px_rgba(148,70,88,0.35)]">
+    <div className="rounded-[1.1rem] border border-slate-200/80 bg-slate-50/55 px-4 py-4">
       <div className="flex items-center gap-2 text-brand-wine">
         <Icon className="h-4 w-4" />
         <p className="text-xs font-bold uppercase tracking-[0.18em]">{label}</p>

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Clock3, Globe2, MapPin, Mail, Phone, Settings2 } from "lucide-react";
+import { Building2, Clock3, Globe2, Mail, MapPin, Phone, Settings2 } from "lucide-react";
 import { Button } from "../../../../shared/ui/button/Button";
 import type {
   BusinessSettings,
@@ -88,66 +88,72 @@ export function BusinessSettingsPanel({ settings, onSave, isSaving }: BusinessSe
   }
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
       <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
-                  <Settings2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
-                    Identidad y operativa
-                  </p>
-                  <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Configuracion del negocio</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Ajusta los datos visibles de la clinica y las reglas operativas que impactan en las
-                reservas para mantener una experiencia consistente y profesional.
+        <div className="border-b border-slate-200/80 bg-white px-5 py-5 md:px-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-brand-wine">
+              <Settings2 className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-400">Configuracion</p>
+              <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Datos del negocio</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                Ajusta identidad, contacto y reglas operativas sin tocar la logica del sistema.
               </p>
-            </div>
-
-            <div className="grid min-w-[240px] gap-3 rounded-[1.5rem] border border-rose-100 bg-white/85 p-4 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)] sm:grid-cols-2">
-              <MetricPill label="Ventana" value={`${preview.bookingWindowDays || 45} dias`} icon={<Clock3 className="h-4 w-4" />} />
-              <MetricPill label="Gap" value={`${preview.appointmentGapMin || 0} min`} icon={<Clock3 className="h-4 w-4" />} />
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Nombre comercial" error={errors.businessName?.message}>
-              <input type="text" {...register("businessName")} className="field-input" />
-            </Field>
-            <Field label="Email de contacto" error={errors.contactEmail?.message}>
-              <input type="email" {...register("contactEmail")} className="field-input" />
-            </Field>
-            <Field label="Telefono" error={errors.phone?.message}>
-              <input type="text" {...register("phone")} className="field-input" />
-            </Field>
-            <Field label="Direccion" error={errors.address?.message}>
-              <input type="text" {...register("address")} className="field-input" />
-            </Field>
-            <Field label="Ventana de reserva" error={errors.bookingWindowDays?.message}>
-              <input type="number" min="1" max="365" {...register("bookingWindowDays")} className="field-input" />
-            </Field>
-            <Field label="Separacion entre turnos" error={errors.appointmentGapMin?.message}>
-              <input type="number" min="0" max="120" {...register("appointmentGapMin")} className="field-input" />
-            </Field>
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 p-5 md:p-6">
+          <FormSection
+            title="Marca y contacto"
+            copy="Informacion que aparece en el sitio y sirve como referencia para pacientes y recepcion."
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nombre comercial" error={errors.businessName?.message}>
+                <input type="text" {...register("businessName")} className="field-input" />
+              </Field>
+              <Field label="Email de contacto" error={errors.contactEmail?.message}>
+                <input type="email" {...register("contactEmail")} className="field-input" />
+              </Field>
+              <Field label="Telefono" error={errors.phone?.message}>
+                <input type="text" {...register("phone")} className="field-input" />
+              </Field>
+              <Field label="Direccion" error={errors.address?.message}>
+                <input type="text" {...register("address")} className="field-input" />
+              </Field>
+            </div>
+          </FormSection>
 
-          <Field label="Timezone" error={errors.timezone?.message}>
-            <input type="text" {...register("timezone")} className="field-input" />
-          </Field>
+          <FormSection
+            title="Reglas operativas"
+            copy="Afectan la disponibilidad publicada y el margen operativo entre turnos."
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Ventana de reserva" error={errors.bookingWindowDays?.message} hint="Dias de anticipacion disponibles en el booking.">
+                <input type="number" min="1" max="365" {...register("bookingWindowDays")} className="field-input" />
+              </Field>
+              <Field label="Separacion entre turnos" error={errors.appointmentGapMin?.message} hint="Tiempo extra entre atenciones para aire operativo.">
+                <input type="number" min="0" max="120" {...register("appointmentGapMin")} className="field-input" />
+              </Field>
+            </div>
+          </FormSection>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,241,243,0.92))] px-4 py-4 shadow-[0_24px_60px_-48px_rgba(148,70,88,0.45)]">
+          <FormSection
+            title="Regionalizacion"
+            copy="Define la zona horaria usada para agenda, disponibilidad y visualizacion de turnos."
+          >
+            <Field label="Timezone" error={errors.timezone?.message}>
+              <input type="text" {...register("timezone")} className="field-input" />
+            </Field>
+          </FormSection>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.35rem] border border-slate-200 bg-slate-50/75 px-4 py-4">
             <div className="text-sm text-slate-600">
-              <p className="font-semibold text-brand-ink">Impacto inmediato</p>
-              <p className="mt-1">
-                Estos cambios afectan lo que ve el paciente y como se calcula la disponibilidad.
+              <p className="font-semibold text-brand-ink">Aplicacion inmediata</p>
+              <p className="mt-1 max-w-2xl">
+                Los cambios impactan en el sitio publico y en la disponibilidad operativa del negocio.
               </p>
             </div>
             <Button type="submit" className="min-w-52" disabled={isSaving || !isDirty}>
@@ -157,112 +163,124 @@ export function BusinessSettingsPanel({ settings, onSave, isSaving }: BusinessSe
         </form>
       </div>
 
-      <div className="space-y-6">
-        <div className="card-surface overflow-hidden px-6 py-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine">
-              <Building2 className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-wine">Preview institucional</p>
-              <p className="mt-1 text-sm text-slate-600">Asi se veran los datos base del negocio.</p>
-            </div>
+      <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+        <PreviewCard
+          title="Preview institucional"
+          copy="Asi se veran los datos principales del negocio."
+          icon={<Building2 className="h-5 w-5" />}
+        >
+          <h3 className="mt-1 text-2xl font-semibold text-brand-ink">{preview.businessName || "Tu negocio"}</h3>
+          <div className="mt-4 space-y-3">
+            <PreviewRow label="Telefono" value={preview.phone || "Sin telefono cargado"} icon={<Phone className="h-4 w-4" />} />
+            <PreviewRow label="Email" value={preview.contactEmail || "Sin email cargado"} icon={<Mail className="h-4 w-4" />} />
+            <PreviewRow label="Direccion" value={preview.address || "Sin direccion cargada"} icon={<MapPin className="h-4 w-4" />} />
+            <PreviewRow label="Timezone" value={preview.timezone} icon={<Globe2 className="h-4 w-4" />} />
           </div>
-          <h3 className="mt-3 font-display text-3xl text-brand-ink">{preview.businessName || "Tu negocio"}</h3>
-          <div className="mt-5 grid gap-4 text-sm text-slate-600">
-            <PreviewItem label="Telefono" value={preview.phone || "Sin telefono cargado"} icon={<Phone className="h-4 w-4" />} />
-            <PreviewItem label="Email" value={preview.contactEmail || "Sin email cargado"} icon={<Mail className="h-4 w-4" />} />
-            <PreviewItem label="Direccion" value={preview.address || "Sin direccion cargada"} icon={<MapPin className="h-4 w-4" />} />
-            <PreviewItem label="Timezone" value={preview.timezone} icon={<Globe2 className="h-4 w-4" />} />
-          </div>
-        </div>
+        </PreviewCard>
 
-        <div className="card-surface overflow-hidden px-6 py-5">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-wine">Reglas activas</p>
-          <div className="mt-4 grid gap-3">
-            <RuleCard
-              label="Ventana de reserva"
-              value={`${preview.bookingWindowDays || 45} dias`}
-              copy="Define hasta cuanta anticipacion puede reservar un paciente desde la web."
-            />
-            <RuleCard
-              label="Separacion entre turnos"
-              value={`${preview.appointmentGapMin || 0} min`}
-              copy="Se suma a la duracion del servicio para dejar aire operativo entre pacientes."
-            />
+        <PreviewCard
+          title="Resumen operativo"
+          copy="Metricas breves para validar reglas sin tener que releer todo el formulario."
+          icon={<Clock3 className="h-5 w-5" />}
+        >
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <MetricTile label="Ventana activa" value={`${preview.bookingWindowDays || 45} dias`} />
+            <MetricTile label="Gap entre turnos" value={`${preview.appointmentGapMin || 0} min`} />
           </div>
-        </div>
-      </div>
+        </PreviewCard>
+      </aside>
     </section>
   );
 }
 
-interface MetricPillProps {
-  label: string;
-  value: string;
-  icon: ReactNode;
+interface FormSectionProps {
+  title: string;
+  copy: string;
+  children: ReactNode;
 }
 
-function MetricPill({ label, value, icon }: MetricPillProps) {
+function FormSection({ title, copy, children }: FormSectionProps) {
   return (
-    <div className="rounded-[1.25rem] border border-rose-100/80 bg-rose-50/55 px-4 py-3">
-      <div className="flex items-center gap-2 text-brand-wine">
-        {icon}
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em]">{label}</p>
+    <section className="space-y-4 rounded-[1.4rem] border border-slate-200 bg-white px-4 py-4">
+      <div className="border-b border-slate-100 pb-3">
+        <p className="text-sm font-semibold text-brand-ink">{title}</p>
+        <p className="mt-1 text-sm text-slate-500">{copy}</p>
       </div>
-      <p className="mt-2 text-lg font-semibold text-brand-ink">{value}</p>
-    </div>
+      {children}
+    </section>
   );
 }
 
 interface FieldProps {
   label: string;
   error?: string;
+  hint?: string;
   children: ReactNode;
 }
 
-function Field({ label, error, children }: FieldProps) {
+function Field({ label, error, hint, children }: FieldProps) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-brand-ink">{label}</span>
       {children}
+      {hint ? <span className="mt-2 block text-xs text-slate-400">{hint}</span> : null}
       {error ? <span className="mt-2 block text-xs text-red-500">{error}</span> : null}
     </label>
   );
 }
 
-interface PreviewItemProps {
+interface PreviewCardProps {
+  title: string;
+  copy: string;
+  icon: ReactNode;
+  children: ReactNode;
+}
+
+function PreviewCard({ title, copy, icon, children }: PreviewCardProps) {
+  return (
+    <div className="card-surface overflow-hidden px-5 py-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-brand-wine">
+          {icon}
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-brand-ink">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">{copy}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+interface PreviewRowProps {
   label: string;
   value: string;
   icon: ReactNode;
 }
 
-function PreviewItem({ label, value, icon }: PreviewItemProps) {
+function PreviewRow({ label, value, icon }: PreviewRowProps) {
   return (
-    <div className="rounded-[1.25rem] border border-rose-100 bg-white px-4 py-4">
-      <div className="flex items-center gap-2 text-brand-wine">
+    <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/70 px-4 py-3">
+      <div className="flex items-center gap-2 text-slate-400">
         {icon}
-        <p className="text-xs font-bold uppercase tracking-[0.18em]">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em]">{label}</p>
       </div>
       <p className="mt-2 text-sm text-slate-600">{value}</p>
     </div>
   );
 }
 
-interface RuleCardProps {
+interface MetricTileProps {
   label: string;
   value: string;
-  copy: string;
 }
 
-function RuleCard({ label, value, copy }: RuleCardProps) {
+function MetricTile({ label, value }: MetricTileProps) {
   return (
-    <div className="rounded-[1.25rem] border border-rose-100 bg-rose-50/40 px-4 py-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-brand-ink">{label}</p>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-wine">{value}</span>
-      </div>
-      <p className="mt-2 text-sm text-slate-600">{copy}</p>
+    <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/80 px-4 py-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-brand-ink">{value}</p>
     </div>
   );
 }

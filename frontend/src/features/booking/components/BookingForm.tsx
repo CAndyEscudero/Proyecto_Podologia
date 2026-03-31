@@ -17,11 +17,13 @@ import {
   Sparkles,
   Stethoscope,
   TimerReset,
+  UserRound,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "../../../shared/ui/button/Button";
 import type { ApiErrorResponse, CreateAppointmentResponse } from "../../../shared/types/api";
-import type { Service } from "../../../shared/types/domain";
+import type { Professional, Service } from "../../../shared/types/domain";
+import { getStoredProfessionals } from "../../../shared/utils/professionals";
 import { createAppointment } from "../api/booking.api";
 import { BookingCalendar } from "./BookingCalendar";
 import { useBookingAvailability } from "../hooks/useBookingAvailability";
@@ -40,6 +42,7 @@ const phoneRegex = /^[0-9+() -]{8,20}$/;
 
 const bookingSchema = z.object({
   serviceId: z.string().min(1, "Selecciona un servicio"),
+  professionalId: z.string(),
   date: z
     .string()
     .min(1, "Selecciona una fecha")
@@ -56,7 +59,11 @@ const bookingSchema = z.object({
 
 const steps: BookingStep[] = [
   { id: 1, label: "Servicio", copy: "Elegi el tratamiento que queres reservar." },
-  { id: 2, label: "Dia", copy: "Busca la fecha que mejor se adapte a tu agenda." },
+  {
+    id: 2,
+    label: "Profesional y dia",
+    copy: "Si queres, elige con quien atenderte y luego busca la fecha que mejor se adapte a tu agenda.",
+  },
   { id: 3, label: "Horario", copy: "Selecciona un horario disponible real." },
   { id: 4, label: "Tus datos", copy: "Completa tus datos para confirmar la solicitud." },
 ];
@@ -68,6 +75,8 @@ function getApiMessage(error: unknown, fallbackMessage: string): string {
 
 export function BookingForm() {
   const [confirmation, setConfirmation] = useState<CreateAppointmentResponse | null>(null);
+  const [confirmationProfessionalName, setConfirmationProfessionalName] = useState<string | null>(null);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [step, setStep] = useState<BookingStep["id"]>(1);
   const [searchParams] = useSearchParams();
 
@@ -82,6 +91,7 @@ export function BookingForm() {
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       serviceId: "",
+      professionalId: "",
       date: "",
       startTime: "",
       firstName: "",
@@ -93,6 +103,7 @@ export function BookingForm() {
   });
 
   const serviceId = watch("serviceId");
+  const professionalId = watch("professionalId");
   const date = watch("date");
   const startTime = watch("startTime");
 
@@ -115,6 +126,26 @@ export function BookingForm() {
   const selectedService = services.find((service: Service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
   const activeStep = steps.find((item) => item.id === step) || steps[0];
+  const availableProfessionals = useMemo(
+    () =>
+      professionals.filter(
+        (professional) =>
+          professional.isActive &&
+          (!serviceId ||
+            professional.acceptsAllServices ||
+            professional.serviceIds.includes(Number(serviceId)))
+      ),
+    [professionals, serviceId]
+  );
+  const selectedProfessional =
+    availableProfessionals.find((professional) => String(professional.id) === professionalId) || null;
+  const selectedProfessionalLabel = !serviceId
+    ? "Pendiente"
+    : selectedProfessional
+      ? selectedProfessional.fullName
+      : availableProfessionals.length
+        ? "Cualquier profesional"
+        : "Asignacion general";
 
   const serviceCards = useMemo(
     () =>
@@ -124,6 +155,18 @@ export function BookingForm() {
       })),
     [services]
   );
+
+  useEffect(() => {
+    setProfessionals(getStoredProfessionals());
+
+    function handleStorage() {
+      setProfessionals(getStoredProfessionals());
+    }
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   useEffect(() => {
     const requestedService = searchParams.get("service");
@@ -142,8 +185,19 @@ export function BookingForm() {
     }
   }, [searchParams, services, serviceId]);
 
+  useEffect(() => {
+    if (professionalId && !availableProfessionals.some((professional) => String(professional.id) === professionalId)) {
+      setValue("professionalId", "", {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+  }, [availableProfessionals, professionalId, setValue]);
+
   const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
+      const clientNotes = buildClientNotes(selectedProfessional?.fullName ?? null, values.notes);
       const response = await createAppointment({
         serviceId: Number(values.serviceId),
         date: values.date,
@@ -153,14 +207,16 @@ export function BookingForm() {
           lastName: values.lastName,
           phone: values.phone,
           email: values.email,
-          notes: values.notes,
+          notes: clientNotes || undefined,
         },
       });
 
       setConfirmation(response);
+      setConfirmationProfessionalName(selectedProfessionalLabel);
       toast.success("Turno solicitado correctamente");
       reset({
         serviceId: "",
+        professionalId: "",
         date: "",
         startTime: "",
         firstName: "",
@@ -181,6 +237,11 @@ export function BookingForm() {
       shouldDirty: true,
       shouldTouch: true,
       shouldValidate: true,
+    });
+    setValue("professionalId", "", {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: false,
     });
     setValue("date", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
     setValue("startTime", "", { shouldDirty: true, shouldTouch: true, shouldValidate: false });
@@ -214,6 +275,7 @@ export function BookingForm() {
   function handleResetFlow(): void {
     reset();
     setConfirmation(null);
+    setConfirmationProfessionalName(null);
     clearSuggestions();
     setStep(1);
   }
@@ -256,7 +318,7 @@ export function BookingForm() {
               Paso {activeStep.id}
             </p>
             <h2 className="mt-2 font-display text-[2.1rem] leading-none text-brand-ink sm:text-[2.45rem] md:text-[3.1rem]">
-              Elegi servicio, fecha y horario
+              Elegi servicio, profesional, fecha y horario
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">{activeStep.copy}</p>
           </div>
@@ -310,6 +372,7 @@ export function BookingForm() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-3.5 md:p-5 xl:p-6">
           <input type="hidden" {...register("serviceId")} />
+          <input type="hidden" {...register("professionalId")} />
           <input type="hidden" {...register("date")} />
           <input type="hidden" {...register("startTime")} />
 
@@ -429,13 +492,94 @@ export function BookingForm() {
                       Paso 2
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      Busca un dia disponible. Si queres cambiar el servicio, podes volver atras sin perder el control del flujo.
+                      Primero podes elegir profesional y despues buscar un dia disponible. Si queres cambiar el servicio, podes volver atras sin perder el control del flujo.
                     </p>
                   </div>
                   <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToServices}>
                     <ArrowLeft size={16} />
                     Cambiar servicio
                   </Button>
+                </div>
+
+                <div className="mb-4 rounded-[1.35rem] border border-rose-200/80 bg-white p-3.5 md:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="max-w-2xl">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-brand-ink">
+                        <UserRound size={16} className="text-brand-wine" />
+                        Profesional
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Puedes dejarlo libre para que te asigne cualquier profesional disponible o
+                        elegir una persona puntual si prefieres una continuidad de atencion.
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                      {availableProfessionals.length
+                        ? `${availableProfessionals.length} opcion(es)`
+                        : "Asignacion general"}
+                    </span>
+                  </div>
+
+                  {availableProfessionals.length ? (
+                    <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setValue("professionalId", "", {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          })
+                        }
+                        className={[
+                          "rounded-[1.1rem] border px-4 py-3 text-left transition",
+                          !professionalId
+                            ? "border-brand-rose bg-rose-50 text-brand-wine shadow-soft"
+                            : "border-rose-100 bg-rose-50/55 text-brand-ink hover:border-brand-rose hover:bg-white",
+                        ].join(" ")}
+                      >
+                        <span className="block text-sm font-extrabold">Cualquier profesional</span>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Priorizamos el primer hueco disponible para este servicio.
+                        </span>
+                      </button>
+
+                      {availableProfessionals.map((professional) => {
+                        const isSelected = String(professional.id) === professionalId;
+
+                        return (
+                          <button
+                            key={professional.id}
+                            type="button"
+                            onClick={() =>
+                              setValue("professionalId", String(professional.id), {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true,
+                              })
+                            }
+                            className={[
+                              "rounded-[1.1rem] border px-4 py-3 text-left transition",
+                              isSelected
+                                ? "border-brand-rose bg-rose-50 text-brand-wine shadow-soft"
+                                : "border-rose-100 bg-rose-50/55 text-brand-ink hover:border-brand-rose hover:bg-white",
+                            ].join(" ")}
+                          >
+                            <span className="block text-sm font-extrabold">{professional.fullName}</span>
+                            <span className="mt-1 block text-xs leading-5 text-slate-500">
+                              {professional.bio}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-[1rem] border border-dashed border-rose-200 bg-rose-50/45 px-4 py-4 text-sm text-slate-500">
+                      Todavia no hay profesionales cargados para este servicio, asi que seguiremos
+                      con asignacion general.
+                    </div>
+                  )}
                 </div>
 
                 <Field label="" error={errors.date?.message}>
@@ -632,13 +776,14 @@ export function BookingForm() {
           </div>
 
           {confirmation ? (
-            <div className="mt-4 space-y-2 text-sm text-slate-700">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
-                <CheckCircle2 size={16} />
-                Turno cargado correctamente
-              </div>
+              <div className="mt-4 space-y-2 text-sm text-slate-700">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
+                  <CheckCircle2 size={16} />
+                  Turno cargado correctamente
+                </div>
               <p><strong>Codigo:</strong> #{confirmation.appointment.id}</p>
               <p><strong>Servicio:</strong> {confirmation.appointment.service.name}</p>
+              <p><strong>Profesional:</strong> {confirmationProfessionalName || "Asignacion general"}</p>
               <p><strong>Fecha:</strong> {confirmation.appointment.date}</p>
               <p><strong>Horario:</strong> {confirmation.appointment.startTime}</p>
               <p><strong>Estado:</strong> {confirmation.appointment.status}</p>
@@ -685,6 +830,7 @@ export function BookingForm() {
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Tu seleccion</p>
                 <div className="mt-3 space-y-3">
                   <SummaryRow label="Servicio" value={selectedService?.name || "Pendiente"} />
+                  <SummaryRow label="Profesional" value={selectedProfessionalLabel} />
                   <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
                   <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
                   <SummaryRow label="Finaliza" value={selectedSlot?.endTime || "Pendiente"} />
@@ -732,4 +878,20 @@ function normalizeServiceName(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+function buildClientNotes(professionalName: string | null, notes?: string): string {
+  const sections: string[] = [];
+
+  if (professionalName) {
+    sections.push(`Profesional solicitado: ${professionalName}.`);
+  }
+
+  const trimmedNotes = notes?.trim();
+
+  if (trimmedNotes) {
+    sections.push(trimmedNotes);
+  }
+
+  return sections.join("\n");
 }

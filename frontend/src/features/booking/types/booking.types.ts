@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Client, Service, AvailabilitySlot } from "../../../shared/types/domain";
+import type { Client, Professional, Service, AvailabilitySlot } from "../../../shared/types/domain";
 import type { AvailableSlotsResponse, CreateAppointmentResponse } from "../../../shared/types/api";
 import type {
   AppointmentClientPayload,
@@ -7,7 +7,7 @@ import type {
   RescheduleAppointmentPayload,
 } from "../../admin/appointments/types/appointments.types";
 
-export type { Client, Service, AvailabilitySlot } from "../../../shared/types/domain";
+export type { Client, Professional, Service, AvailabilitySlot } from "../../../shared/types/domain";
 export type { AvailableSlotsResponse, CreateAppointmentResponse } from "../../../shared/types/api";
 export type {
   AppointmentClientPayload,
@@ -17,6 +17,7 @@ export type {
 
 export interface BookingFormValues {
   serviceId: string;
+  professionalId: string;
   date: string;
   startTime: string;
   firstName: string;

@@ -14,8 +14,6 @@ Copiar:
 - `frontend/.env.example` -> `frontend/.env`
 - `backend/.env.example` -> `backend/.env`
 
-Tambien deje creados los `.env` locales listos para desarrollo.
-
 ## Entorno local completo
 
 ### Servicios locales
@@ -39,27 +37,6 @@ Tambien deje creados los `.env` locales listos para desarrollo.
 - Seed: `npm run prisma:seed`
 - Frontend: `npm run dev:frontend`
 - Backend: `npm run dev:backend`
-
-### Setup rapido
-
-Si Docker Desktop esta corriendo, podes ejecutar:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
-```
-
-O, si preferis evitar la restriccion de PowerShell con `npm.ps1`:
-
-```cmd
-scripts\setup-local.cmd
-```
-
-### Arranque diario
-
-```cmd
-scripts\run-backend.cmd
-scripts\run-frontend.cmd
-```
 
 ## Pasos sugeridos
 

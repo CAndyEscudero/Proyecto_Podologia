@@ -1,8 +1,9 @@
 const bcrypt = require("bcryptjs");
 const { prisma } = require("../../config/prisma");
 
-async function listUsers() {
+async function listUsers(tenantId) {
   return prisma.user.findMany({
+    where: { tenantId },
     select: {
       id: true,
       fullName: true,
@@ -14,11 +15,12 @@ async function listUsers() {
   });
 }
 
-async function createUser(data) {
+async function createUser(tenantId, data) {
   const passwordHash = await bcrypt.hash(data.password, 10);
 
   return prisma.user.create({
     data: {
+      tenantId,
       fullName: data.fullName,
       email: String(data.email).toLowerCase(),
       role: data.role || "ADMIN",

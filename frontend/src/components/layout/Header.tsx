@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
-import { siteConfig } from "../../app/config/site-config";
 import { Button } from "../../shared/ui/button/Button";
+import { usePublicTenant } from "../../features/public/tenant/PublicTenantProvider";
 
 interface HeaderLink {
   to: string;
@@ -15,6 +15,8 @@ const links: HeaderLink[] = [
 ];
 
 export function Header() {
+  const { siteConfig } = usePublicTenant();
+
   return (
     <header className="sticky top-0 z-50 border-b border-rose-100/70 bg-white/85 backdrop-blur">
       <div className="container-shell flex min-h-20 items-center justify-between gap-4">

@@ -8,23 +8,46 @@ import type { BusinessSettings, User } from "../shared/types/domain";
 export function AdminLayout() {
   const [userName, setUserName] = useState<string>("");
   const [businessName, setBusinessName] = useState<string>("");
+  const [tenantHost, setTenantHost] = useState<string>("");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setTenantHost(window.location.host);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
     async function loadHeaderContext() {
       try {
-        const [meResponse, businessSettingsResponse]: [{ user: User }, BusinessSettings] = await Promise.all([
+        const [meResponse, businessSettingsResponse] = await Promise.all([
           getMe(),
           getBusinessSettings(),
         ]);
+
+        if (isCancelled) {
+          return;
+        }
+
         setUserName(meResponse?.user?.fullName || "");
-        setBusinessName(businessSettingsResponse?.businessName || "");
+        setBusinessName(businessSettingsResponse?.businessName || meResponse?.tenant?.name || "");
       } catch {
-        setUserName("");
-        setBusinessName("");
+        clearStoredToken();
+
+        if (!isCancelled) {
+          setUserName("");
+          setBusinessName("");
+          window.location.href = "/admin/login";
+        }
       }
     }
 
     void loadHeaderContext();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   return (
@@ -34,7 +57,9 @@ export function AdminLayout() {
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-brand-wine">Centro de control</p>
             <p className="mt-2 font-display text-3xl text-brand-ink md:text-4xl">Panel administrativo</p>
-            <p className="mt-1 text-sm text-slate-500">Agenda, servicios, disponibilidad y configuracion operativa</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Agenda, servicios, disponibilidad y configuracion operativa del tenant actual
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
@@ -44,6 +69,9 @@ export function AdminLayout() {
               </p>
               <p className="mt-1">
                 <strong className="text-brand-ink">Negocio:</strong> {businessName || "Sin configurar"}
+              </p>
+              <p className="mt-1 break-all text-xs text-slate-500">
+                <strong className="text-brand-ink">Host:</strong> {tenantHost || "Resolviendo..."}
               </p>
             </div>
 

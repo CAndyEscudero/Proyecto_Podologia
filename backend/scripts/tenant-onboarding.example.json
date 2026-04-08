@@ -1,0 +1,40 @@
+{
+  "tenant": {
+    "name": "Peluqueria Luna",
+    "requestedSlug": "peluqueria-luna",
+    "businessType": "HAIR",
+    "status": "ACTIVE"
+  },
+  "owner": {
+    "fullName": "Luna Perez",
+    "email": "admin@peluquerialuna.com",
+    "password": "Cambiar123!"
+  },
+  "settings": {
+    "businessName": "Peluqueria Luna",
+    "contactEmail": "hola@peluquerialuna.com",
+    "phone": "+54 9 3462 55-1234",
+    "address": "Belgrano 123, Venado Tuerto",
+    "appointmentGapMin": 10,
+    "bookingWindowDays": 45,
+    "depositPercentage": 50,
+    "transactionalEmailEnabled": true,
+    "transactionalEmailFromName": "Peluqueria Luna",
+    "transactionalEmailReplyTo": "recepcion@peluquerialuna.com",
+    "whatsAppEnabled": true,
+    "whatsAppNumber": "5493462551234",
+    "whatsAppDefaultMessage": "Hola! Quiero consultar por un turno.",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "services": {
+    "mode": "template",
+    "templateKey": "HAIR_BASIC"
+  },
+  "availability": {
+    "mode": "template",
+    "templateKey": "TUESDAY_TO_SATURDAY_10_TO_19"
+  },
+  "domains": {
+    "customDomain": "turnos.peluquerialuna.com"
+  }
+}

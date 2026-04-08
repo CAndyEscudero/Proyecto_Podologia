@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { siteConfig } from "../../../app/config/site-config";
 import { trustPillars } from "../data/home-content";
 import { Button } from "../../../shared/ui/button/Button";
+import { usePublicTenant } from "../../public/tenant/PublicTenantProvider";
 
 export function HeroSection() {
+  const { siteConfig } = usePublicTenant();
+
   return (
     <section className="relative overflow-hidden">
       <div
@@ -15,7 +17,7 @@ export function HeroSection() {
       <div className="container-shell relative flex min-h-[86vh] items-center py-24">
         <div className="max-w-3xl text-white">
           <p className="mb-6 inline-flex rounded-full bg-white/15 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.28em] text-rose-50">
-            Podologia y pedicuria profesional en {siteConfig.location}
+            Agenda online de {siteConfig.businessName}
           </p>
           <h1 className="font-display text-5xl font-semibold leading-none md:text-7xl">
             {siteConfig.heroTitle}

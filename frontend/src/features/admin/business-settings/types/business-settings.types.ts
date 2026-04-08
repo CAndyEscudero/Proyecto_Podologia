@@ -9,6 +9,14 @@ export interface UpdateBusinessSettingsPayload {
   address?: string | null;
   appointmentGapMin?: number;
   bookingWindowDays?: number;
+  depositPercentage?: number;
+  mercadoPagoEnabled?: boolean;
+  transactionalEmailEnabled?: boolean;
+  transactionalEmailFromName?: string | null;
+  transactionalEmailReplyTo?: string | null;
+  whatsAppEnabled?: boolean;
+  whatsAppNumber?: string | null;
+  whatsAppDefaultMessage?: string | null;
   timezone?: string;
 }
 
@@ -19,5 +27,13 @@ export interface BusinessSettingsFormValues {
   address: string;
   appointmentGapMin: number;
   bookingWindowDays: number;
+  depositPercentage: number;
+  mercadoPagoEnabled: boolean;
+  transactionalEmailEnabled: boolean;
+  transactionalEmailFromName: string;
+  transactionalEmailReplyTo: string;
+  whatsAppEnabled: boolean;
+  whatsAppNumber: string;
+  whatsAppDefaultMessage: string;
   timezone: string;
 }

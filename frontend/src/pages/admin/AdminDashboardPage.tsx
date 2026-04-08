@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { CalendarClock, Menu } from "lucide-react";
 import type { AxiosError } from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AdminSummary } from "../../features/admin/appointments/components/AdminSummary";
 import { AppointmentsManager } from "../../features/admin/appointments/components/AppointmentsManager";
 import { AppointmentsTable } from "../../features/admin/appointments/components/AppointmentsTable";
@@ -33,6 +34,10 @@ import type {
 import { getBusinessSettings, updateBusinessSettings } from "../../features/admin/business-settings/api/business-settings.api";
 import { BusinessSettingsPanel } from "../../features/admin/business-settings/components/BusinessSettingsPanel";
 import type { UpdateBusinessSettingsPayload } from "../../features/admin/business-settings/types/business-settings.types";
+import {
+  disconnectMercadoPagoConnection,
+  startMercadoPagoOauth,
+} from "../../features/admin/payments/api/mercadopago.api";
 import { getMe } from "../../features/admin/auth/api/auth.api";
 import { createService, deleteService, getServices, updateService } from "../../features/admin/services/api/services.api";
 import { ServicesManager } from "../../features/admin/services/components/ServicesManager";
@@ -50,8 +55,11 @@ import type {
 import type { Service, AvailabilityRule, BlockedDate, BusinessSettings, Appointment, User } from "../../shared/types/domain";
 import type { CreateServicePayload, UpdateServicePayload } from "../../features/admin/services/types/services.types";
 import type { ApiErrorResponse } from "../../shared/types/api";
+import { clearStoredToken } from "../../shared/utils/auth";
 
 export function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [, setUser] = useState<User | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -82,8 +90,12 @@ export function AdminDashboardPage() {
   const [isSavingBlockedDate, setIsSavingBlockedDate] = useState(false);
   const [isDeletingBlockedDateId, setIsDeletingBlockedDateId] = useState<number | null>(null);
   const [isSavingBusinessSettings, setIsSavingBusinessSettings] = useState(false);
+  const [isConnectingMercadoPago, setIsConnectingMercadoPago] = useState(false);
+  const [isDisconnectingMercadoPago, setIsDisconnectingMercadoPago] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
+
     async function bootstrap() {
       try {
         const [
@@ -101,6 +113,11 @@ export function AdminDashboardPage() {
           getBusinessSettings(),
           getAppointments(buildAppointmentsParams(filters)),
         ]);
+
+        if (isCancelled) {
+          return;
+        }
+
         setUser(meResponse.user);
         setServices(servicesResponse);
         setRules(rulesResponse);
@@ -108,12 +125,26 @@ export function AdminDashboardPage() {
         setBusinessSettings(businessSettingsResponse);
         setAppointments(appointmentsResponse);
       } catch (error) {
+        if (isUnauthorizedError(error)) {
+          clearStoredToken();
+
+          if (!isCancelled) {
+            toast.error("La sesion no corresponde al tenant actual. Vuelve a iniciar sesion.");
+            void navigate("/admin/login", { replace: true });
+          }
+          return;
+        }
+
         toast.error(getErrorMessage(error, "No se pudo cargar el contexto del panel"));
       }
     }
 
     void bootstrap();
-  }, []);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [navigate]);
 
   useEffect(() => {
     async function fetchAppointments() {
@@ -124,6 +155,26 @@ export function AdminDashboardPage() {
       void fetchAppointments();
     }
   }, [filters, activeTab]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const oauthStatus = searchParams.get("mp_oauth");
+    const reason = searchParams.get("reason");
+
+    if (!oauthStatus) {
+      return;
+    }
+
+    setActiveTab("business");
+
+    if (oauthStatus === "success") {
+      toast.success("Cuenta de Mercado Pago conectada");
+    } else if (oauthStatus === "error") {
+      toast.error(reason || "No se pudo conectar Mercado Pago");
+    }
+
+    void navigate("/admin/dashboard", { replace: true });
+  }, [location.search, navigate]);
 
   async function loadAppointments(activeFilters: AppointmentFilters = filters) {
     try {
@@ -478,6 +529,31 @@ export function AdminDashboardPage() {
     }
   }
 
+  async function handleConnectMercadoPago() {
+    try {
+      setIsConnectingMercadoPago(true);
+      const authorizeUrl = await startMercadoPagoOauth();
+      window.location.assign(authorizeUrl);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "No se pudo iniciar la conexion con Mercado Pago"));
+      setIsConnectingMercadoPago(false);
+    }
+  }
+
+  async function handleDisconnectMercadoPago() {
+    try {
+      setIsDisconnectingMercadoPago(true);
+      await disconnectMercadoPagoConnection();
+      const updated = await getBusinessSettings();
+      setBusinessSettings(updated);
+      toast.success("Cuenta de Mercado Pago desconectada");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "No se pudo desconectar Mercado Pago"));
+    } finally {
+      setIsDisconnectingMercadoPago(false);
+    }
+  }
+
   function handleSidebarChange(nextTab: string) {
     const typedNextTab = nextTab as DashboardTab;
     setActiveTab(typedNextTab);
@@ -673,7 +749,11 @@ export function AdminDashboardPage() {
                   <BusinessSettingsPanel
                     settings={businessSettings}
                     onSave={handleUpdateBusinessSettings}
+                    onConnectMercadoPago={handleConnectMercadoPago}
+                    onDisconnectMercadoPago={handleDisconnectMercadoPago}
                     isSaving={isSavingBusinessSettings}
+                    isConnectingMercadoPago={isConnectingMercadoPago}
+                    isDisconnectingMercadoPago={isDisconnectingMercadoPago}
                   />
                 ) : null}
               </div>
@@ -698,4 +778,9 @@ function buildAppointmentsParams(filters: AppointmentFilters) {
 function getErrorMessage(error: unknown, fallback: string): string {
   const apiError = error as AxiosError<ApiErrorResponse>;
   return apiError.response?.data?.message || fallback;
+}
+
+function isUnauthorizedError(error: unknown): boolean {
+  const apiError = error as AxiosError<ApiErrorResponse>;
+  return apiError.response?.status === 401 || apiError.response?.status === 403;
 }

@@ -1,9 +1,29 @@
 require("dotenv").config();
 
-const { PrismaClient, UserRole, AvailabilityRuleType } = require("@prisma/client");
+const {
+  PrismaClient,
+  UserRole,
+  AvailabilityRuleType,
+  TenantStatus,
+} = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+const {
+  buildPlatformSubdomainHostname,
+  normalizeTenantSlug,
+  upsertTenantPlatformDomain,
+} = require("../src/modules/tenants/tenant-provisioning.service");
+const {
+  buildDefaultBusinessSettingsData,
+} = require("../src/modules/business-settings/business-settings.service");
 
 const prisma = new PrismaClient();
+const DEFAULT_TENANT_SLUG = normalizeTenantSlug("pies-sanos-venado");
+const DEFAULT_TENANT_NAME = "Pies Sanos Venado";
+const DEFAULT_MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const DEFAULT_MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || "";
+const DEFAULT_MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || "";
+const DEFAULT_TRANSACTIONAL_EMAIL_ENABLED = false;
+const DEFAULT_WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || process.env.VITE_WHATSAPP_NUMBER || "5493462000000";
 
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -14,24 +34,67 @@ async function main() {
   }
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const defaultTenant = await prisma.tenant.upsert({
+    where: { slug: DEFAULT_TENANT_SLUG },
+    update: {
+      name: DEFAULT_TENANT_NAME,
+      businessType: "PODOLOGY",
+      status: TenantStatus.ACTIVE,
+    },
+    create: {
+      name: DEFAULT_TENANT_NAME,
+      slug: DEFAULT_TENANT_SLUG,
+      businessType: "PODOLOGY",
+      status: TenantStatus.ACTIVE,
+    },
+  });
 
-  await prisma.businessSettings.upsert({
-    where: { id: 1 },
+  await upsertTenantPlatformDomain(prisma, defaultTenant);
+
+  const defaultBusinessSettings = await prisma.businessSettings.upsert({
+    where: { tenantId: defaultTenant.id },
     update: {},
     create: {
-      id: 1,
-      businessName: "Pies Sanos Venado",
+      ...buildDefaultBusinessSettingsData(defaultTenant),
       phone: "+54 9 3462 000000",
       address: "Av. Casey 123, Venado Tuerto",
       bookingWindowDays: 45,
       appointmentGapMin: 0,
+      mercadoPagoEnabled: Boolean(DEFAULT_MP_ACCESS_TOKEN),
+      mercadoPagoPublicKey: DEFAULT_MP_PUBLIC_KEY || null,
+      mercadoPagoAccessToken: DEFAULT_MP_ACCESS_TOKEN || null,
+      mercadoPagoWebhookSecret: DEFAULT_MP_WEBHOOK_SECRET || null,
+      transactionalEmailEnabled: DEFAULT_TRANSACTIONAL_EMAIL_ENABLED,
+      transactionalEmailFromName: DEFAULT_TENANT_NAME,
+      transactionalEmailReplyTo: adminEmail,
+      whatsAppEnabled: Boolean(DEFAULT_WHATSAPP_NUMBER),
+      whatsAppNumber: DEFAULT_WHATSAPP_NUMBER || null,
+      whatsAppDefaultMessage: "Hola, quiero consultar por un turno.",
     },
   });
 
+  if (DEFAULT_MP_ACCESS_TOKEN && !defaultBusinessSettings.mercadoPagoAccessToken) {
+    await prisma.businessSettings.update({
+      where: { id: defaultBusinessSettings.id },
+      data: {
+        mercadoPagoEnabled: true,
+        mercadoPagoPublicKey: DEFAULT_MP_PUBLIC_KEY || defaultBusinessSettings.mercadoPagoPublicKey,
+        mercadoPagoAccessToken: DEFAULT_MP_ACCESS_TOKEN,
+        mercadoPagoWebhookSecret: DEFAULT_MP_WEBHOOK_SECRET || defaultBusinessSettings.mercadoPagoWebhookSecret,
+      },
+    });
+  }
+
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      tenantId: defaultTenant.id,
+      fullName: "Admin Principal",
+      role: UserRole.OWNER,
+      isActive: true,
+    },
     create: {
+      tenantId: defaultTenant.id,
       fullName: "Admin Principal",
       email: adminEmail,
       passwordHash,
@@ -62,9 +125,17 @@ async function main() {
 
   for (const service of services) {
     await prisma.service.upsert({
-      where: { slug: service.slug },
+      where: {
+        tenantId_slug: {
+          tenantId: defaultTenant.id,
+          slug: service.slug,
+        },
+      },
       update: {},
-      create: service,
+      create: {
+        tenantId: defaultTenant.id,
+        ...service,
+      },
     });
   }
 
@@ -84,6 +155,7 @@ async function main() {
   for (const rule of rules) {
     const existing = await prisma.availabilityRule.findFirst({
       where: {
+        tenantId: defaultTenant.id,
         dayOfWeek: rule.dayOfWeek,
         type: rule.type,
         startTime: rule.startTime,
@@ -92,7 +164,12 @@ async function main() {
     });
 
     if (!existing) {
-      await prisma.availabilityRule.create({ data: rule });
+      await prisma.availabilityRule.create({
+        data: {
+          tenantId: defaultTenant.id,
+          ...rule,
+        },
+      });
     }
   }
 }

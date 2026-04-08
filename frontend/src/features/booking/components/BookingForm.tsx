@@ -11,21 +11,32 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock3,
+  ExternalLink,
   LoaderCircle,
   MapPinned,
   Search,
   Sparkles,
   Stethoscope,
   TimerReset,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "../../../shared/ui/button/Button";
-import type { ApiErrorResponse, CreateAppointmentResponse } from "../../../shared/types/api";
+import type {
+  ApiErrorResponse,
+  CreateAppointmentPaymentResponse,
+} from "../../../shared/types/api";
 import type { Service } from "../../../shared/types/domain";
-import { createAppointment } from "../api/booking.api";
+import { createPaymentReservation } from "../api/booking.api";
 import { BookingCalendar } from "./BookingCalendar";
 import { useBookingAvailability } from "../hooks/useBookingAvailability";
-import { formatBookingPrice } from "../utils/booking-formatters";
+import {
+  calculateDepositCents,
+  calculateRemainingCents,
+  formatBookingPrice,
+} from "../utils/booking-formatters";
+import { buildWhatsAppUrl } from "../../../shared/utils/whatsapp";
+import { usePublicTenant } from "../../public/tenant/PublicTenantProvider";
 import type {
   BookingFieldProps,
   BookingFormValues,
@@ -34,7 +45,6 @@ import type {
 } from "../types/booking.types";
 
 const today = dayjs().format("YYYY-MM-DD");
-const maxBookingDate = dayjs().add(45, "day").format("YYYY-MM-DD");
 const personNameRegex = /^[\p{L}' -]{2,80}$/u;
 const phoneRegex = /^[0-9+() -]{8,20}$/;
 
@@ -50,7 +60,7 @@ const bookingSchema = z.object({
   firstName: z.string().trim().regex(personNameRegex, "Ingresa un nombre valido"),
   lastName: z.string().trim().regex(personNameRegex, "Ingresa un apellido valido"),
   phone: z.string().trim().regex(phoneRegex, "Ingresa un telefono valido"),
-  email: z.string().trim().max(120, "Email demasiado largo").email("Ingresa un email valido"),
+  email: z.union([z.literal(""), z.string().trim().max(120, "Email demasiado largo").email("Ingresa un email valido")]),
   notes: z.string().trim().max(1000, "Las observaciones son demasiado largas").optional(),
 });
 
@@ -61,14 +71,21 @@ const steps: BookingStep[] = [
   { id: 4, label: "Tus datos", copy: "Completa tus datos para confirmar la solicitud." },
 ];
 
+const BOOKING_RECEIPT_STORAGE_KEY = "booking_receipt_snapshot";
+
 function getApiMessage(error: unknown, fallbackMessage: string): string {
   const maybeError = error as { response?: { data?: ApiErrorResponse } };
   return maybeError?.response?.data?.message || fallbackMessage;
 }
 
 export function BookingForm() {
-  const [confirmation, setConfirmation] = useState<CreateAppointmentResponse | null>(null);
+  const { publicSettings, siteConfig } = usePublicTenant();
+  const [pendingReservation, setPendingReservation] = useState<CreateAppointmentPaymentResponse | null>(null);
   const [step, setStep] = useState<BookingStep["id"]>(1);
+  const [isClientSheetOpen, setIsClientSheetOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
   const [searchParams] = useSearchParams();
 
   const {
@@ -95,6 +112,8 @@ export function BookingForm() {
   const serviceId = watch("serviceId");
   const date = watch("date");
   const startTime = watch("startTime");
+  const bookingWindowDays = publicSettings?.bookingWindowDays || 45;
+  const maxBookingDate = dayjs().add(bookingWindowDays, "day").format("YYYY-MM-DD");
 
   const {
     services,
@@ -115,6 +134,12 @@ export function BookingForm() {
   const selectedService = services.find((service: Service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
   const activeStep = steps.find((item) => item.id === step) || steps[0];
+  const depositCents = calculateDepositCents(
+    selectedService?.priceCents,
+    publicSettings?.depositPercentage || 50
+  );
+  const remainingCents = calculateRemainingCents(selectedService?.priceCents, depositCents);
+  const serviceNeedsManualQuote = Boolean(selectedService && !selectedService.priceCents);
 
   const serviceCards = useMemo(
     () =>
@@ -142,9 +167,30 @@ export function BookingForm() {
     }
   }, [searchParams, services, serviceId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = (event?: MediaQueryListEvent) => {
+      setIsMobileViewport(event ? event.matches : mediaQuery.matches);
+    };
+
+    syncViewport();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
+
   const onSubmit: SubmitHandler<BookingFormValues> = async (values) => {
     try {
-      const response = await createAppointment({
+      const response = await createPaymentReservation({
         serviceId: Number(values.serviceId),
         date: values.date,
         startTime: values.startTime,
@@ -152,13 +198,41 @@ export function BookingForm() {
           firstName: values.firstName,
           lastName: values.lastName,
           phone: values.phone,
-          email: values.email,
+          email: values.email || undefined,
           notes: values.notes,
         },
       });
 
-      setConfirmation(response);
-      toast.success("Turno solicitado correctamente");
+      setPendingReservation(response);
+      window.sessionStorage.setItem(
+        BOOKING_RECEIPT_STORAGE_KEY,
+        JSON.stringify({
+          appointmentId: response.appointment.id,
+          issuedAt: response.appointment.createdAt || new Date().toISOString(),
+          appointment: {
+            date: response.appointment.date,
+            startTime: response.appointment.startTime,
+            endTime: response.appointment.endTime,
+            notes: response.appointment.notes,
+          },
+          client: {
+            firstName: response.appointment.client.firstName,
+            lastName: response.appointment.client.lastName,
+            phone: response.appointment.client.phone,
+            email: response.appointment.client.email,
+          },
+          service: {
+            name: response.appointment.service.name,
+            durationMin: response.appointment.service.durationMin,
+          },
+          paymentSummary: {
+            total: response.paymentSummary.priceCents,
+            deposit: response.paymentSummary.depositCents,
+            paymentOption: response.paymentSummary.paymentOption,
+          },
+        })
+      );
+      toast.success("Reserva pendiente creada. Te redirigimos a Mercado Pago.");
       reset({
         serviceId: "",
         date: "",
@@ -171,8 +245,17 @@ export function BookingForm() {
       });
       clearSuggestions();
       setStep(1);
+
+      if (response.checkoutUrl) {
+        window.location.assign(response.checkoutUrl);
+        return;
+      }
+
+      toast("La reserva quedo creada, pero no encontramos la URL de pago.", {
+        icon: "⚠️",
+      });
     } catch (error) {
-      toast.error(getApiMessage(error, "No fue posible reservar el turno"));
+      toast.error(getApiMessage(error, "No fue posible iniciar la reserva con pago"));
     }
   };
 
@@ -209,13 +292,15 @@ export function BookingForm() {
       shouldValidate: true,
     });
     setStep(4);
+    setIsClientSheetOpen(true);
   }
 
   function handleResetFlow(): void {
     reset();
-    setConfirmation(null);
+    setPendingReservation(null);
     clearSuggestions();
     setStep(1);
+    setIsClientSheetOpen(false);
   }
 
   function handleBackToServices(): void {
@@ -237,6 +322,7 @@ export function BookingForm() {
 
   function handleBackToTimeStep(): void {
     setStep(3);
+    setIsClientSheetOpen(false);
   }
 
   function handleJumpToSuggestedDate(): void {
@@ -247,28 +333,128 @@ export function BookingForm() {
     handleDateChange(nextAvailableOption.date);
   }
 
+  const manualQuoteWhatsAppUrl = siteConfig.whatsappEnabled
+    ? selectedService
+      ? buildWhatsAppUrl(
+          `Hola, quiero consultar el precio y reservar el servicio "${selectedService.name}".`,
+          siteConfig.whatsappNumber
+        )
+      : buildWhatsAppUrl(
+          siteConfig.whatsappDefaultMessage || "Hola, quiero consultar un servicio y reservar un turno.",
+          siteConfig.whatsappNumber
+        )
+    : null;
+
+  const currentStepStatus = `${activeStep.id} de ${steps.length}`;
+  const mobileSummaryText = selectedService
+    ? [selectedService.name, date ? dayjs(date).format("DD/MM") : null, selectedSlot?.startTime || null]
+        .filter(Boolean)
+        .join(" · ")
+    : "Elegi un servicio para empezar";
+
+  const clientStepContent = (
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Nombre" error={errors.firstName?.message}>
+          <input data-testid="booking-first-name" type="text" {...register("firstName")} className="field-input" />
+        </Field>
+
+        <Field label="Apellido" error={errors.lastName?.message}>
+          <input data-testid="booking-last-name" type="text" {...register("lastName")} className="field-input" />
+        </Field>
+
+        <Field label="Telefono" error={errors.phone?.message}>
+          <input data-testid="booking-phone" type="tel" {...register("phone")} className="field-input" />
+        </Field>
+
+        <Field label="Email" error={errors.email?.message}>
+          <input data-testid="booking-email" type="email" {...register("email")} className="field-input" />
+        </Field>
+
+        <div className="md:col-span-2">
+          <Field label="Observaciones">
+            <textarea
+              data-testid="booking-notes"
+              rows={4}
+              {...register("notes")}
+              className="field-input min-h-[110px] resize-none py-3"
+              placeholder="Contanos si hay alguna molestia, antecedente o comentario util para la atencion."
+            />
+          </Field>
+        </div>
+      </div>
+
+      {serviceNeedsManualQuote ? (
+        <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+          <p className="font-semibold">Este servicio todavia no tiene precio online configurado.</p>
+          <p className="mt-2 leading-6">
+            Para reservarlo, contacta al negocio por su canal directo y te ayudamos manualmente con el valor y la coordinacion.
+          </p>
+          {manualQuoteWhatsAppUrl ? (
+            <div className="mt-4">
+              <a href={manualQuoteWhatsAppUrl} target="_blank" rel="noreferrer">
+                <Button type="button" variant="secondary" className="gap-2">
+                  Consultar por WhatsApp
+                  <ExternalLink size={16} />
+                </Button>
+              </a>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-wrap gap-4">
+          <Button
+            data-testid="booking-submit"
+            type="button"
+            className="gap-2"
+            disabled={isSubmitting}
+            onClick={() => void handleSubmit(onSubmit)()}
+          >
+            {isSubmitting ? "Redirigiendo..." : "Reservar turno con sena"}
+            {!isSubmitting ? <ArrowRight size={16} /> : null}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_360px] lg:items-start xl:grid-cols-[minmax(0,1fr)_384px] xl:gap-6">
       <div className="card-surface overflow-hidden bg-white/92">
         <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-white to-rose-50/70 px-4 py-5 md:px-6 md:py-6 xl:px-7">
           <div className="min-w-0">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine">
+            <p className="hidden text-xs font-extrabold uppercase tracking-[0.22em] text-brand-wine md:block">
               Paso {activeStep.id}
             </p>
-            <h2 className="mt-2 font-display text-[2.1rem] leading-none text-brand-ink sm:text-[2.45rem] md:text-[3.1rem]">
+            <h2 className="mt-1 font-display text-[2rem] leading-none text-brand-ink sm:text-[2.45rem] md:mt-2 md:text-[3.1rem]">
               Elegi servicio, fecha y horario
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">{activeStep.copy}</p>
           </div>
 
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 rounded-[1.1rem] border border-rose-100 bg-white/80 p-3 md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                  Reserva guiada
+                </p>
+                <p className="mt-1 text-sm font-semibold text-brand-ink">Paso {currentStepStatus}</p>
+              </div>
+              <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-brand-wine">
+                {activeStep.label}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-slate-500">{mobileSummaryText}</p>
+          </div>
+
+          <div className="mt-5 hidden gap-2 sm:grid sm:grid-cols-2 xl:grid-cols-4">
             {steps.map((item) => {
               const isActive = item.id === step;
               const isCompleted =
                 (item.id === 1 && selectedService) ||
                 (item.id === 2 && date) ||
                 (item.id === 3 && startTime) ||
-                (item.id === 4 && confirmation);
+                (item.id === 4 && pendingReservation);
 
               return (
                 <div
@@ -316,7 +502,7 @@ export function BookingForm() {
           <div className="rounded-[1.6rem] border border-rose-100/80 bg-gradient-to-b from-white to-rose-50/35 md:rounded-[1.85rem]">
             {step === 1 ? (
               <section data-testid="booking-step-service" className="min-w-full p-3.5 md:p-5">
-                <div className="mb-4 flex items-start justify-between gap-4">
+                <div className="mb-4 hidden items-start justify-between gap-4 md:flex">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
                       Paso 1
@@ -425,10 +611,10 @@ export function BookingForm() {
               <section data-testid="booking-step-date" className="min-w-full p-3.5 md:p-5">
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3 md:items-center">
                   <div className="max-w-2xl">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                    <p className="hidden text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine md:block">
                       Paso 2
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 md:mt-1">
                       Busca un dia disponible. Si queres cambiar el servicio, podes volver atras sin perder el control del flujo.
                     </p>
                   </div>
@@ -453,10 +639,10 @@ export function BookingForm() {
               <section data-testid="booking-step-time" className="min-w-full p-3.5 md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                    <p className="hidden text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine md:block">
                       Paso 3
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 md:mt-1">
                       Horarios reales disponibles para {date ? dayjs(date).format("DD/MM/YYYY") : "la fecha elegida"}.
                     </p>
                   </div>
@@ -486,12 +672,13 @@ export function BookingForm() {
                         data-testid="booking-slots-grid"
                         className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3"
                       >
-                        {slots.map((slot) => {
+                        {slots.map((slot, slotIndex) => {
                           const isSelected = startTime === slot.startTime;
+                          const slotKey = `${slot.startTime}-${slot.endTime}-${slotIndex}`;
 
                           return (
                             <button
-                              key={slot.startTime}
+                              key={slotKey}
                               type="button"
                               onClick={() => handleSlotChange(slot.startTime)}
                               data-testid={`booking-slot-${slot.startTime}`}
@@ -565,15 +752,15 @@ export function BookingForm() {
               </section>
             ) : null}
 
-            {step === 4 ? (
-              <section data-testid="booking-step-client" className="min-w-full p-3.5 md:p-5">
+            {step === 4 && !isMobileViewport ? (
+              <section data-testid="booking-step-client" className="hidden min-w-full p-3.5 md:block md:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">
+                    <p className="hidden text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine md:block">
                       Paso 4
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Ya tenes todo elegido. Solo falta completar tus datos para enviar la solicitud.
+                    <p className="text-sm text-slate-500 md:mt-1">
+                      Ya tenes todo elegido. Completa tus datos y te redirigimos a Mercado Pago para abonar la sena.
                     </p>
                   </div>
                   <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToTimeStep}>
@@ -582,66 +769,33 @@ export function BookingForm() {
                   </Button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Nombre" error={errors.firstName?.message}>
-                    <input data-testid="booking-first-name" type="text" {...register("firstName")} className="field-input" />
-                  </Field>
-
-                  <Field label="Apellido" error={errors.lastName?.message}>
-                    <input data-testid="booking-last-name" type="text" {...register("lastName")} className="field-input" />
-                  </Field>
-
-                  <Field label="Telefono" error={errors.phone?.message}>
-                    <input data-testid="booking-phone" type="tel" {...register("phone")} className="field-input" />
-                  </Field>
-
-                  <Field label="Email" error={errors.email?.message}>
-                    <input data-testid="booking-email" type="email" {...register("email")} className="field-input" />
-                  </Field>
-
-                  <div className="md:col-span-2">
-                    <Field label="Observaciones">
-                      <textarea
-                        data-testid="booking-notes"
-                        rows={4}
-                        {...register("notes")}
-                        className="field-input min-h-[110px] resize-none py-3"
-                        placeholder="Contanos si hay alguna molestia, antecedente o comentario util para la atencion."
-                      />
-                    </Field>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <Button data-testid="booking-submit" type="submit" className="gap-2" disabled={isSubmitting}>
-                    {isSubmitting ? "Confirmando..." : "Confirmar solicitud"}
-                    {!isSubmitting ? <ArrowRight size={16} /> : null}
-                  </Button>
-                </div>
+                {clientStepContent}
               </section>
             ) : null}
           </div>
         </form>
       </div>
 
-      <aside className="order-first space-y-4 lg:order-none lg:space-y-5 lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden space-y-4 lg:order-none lg:block lg:space-y-5 lg:sticky lg:top-24 lg:self-start">
         <div className="card-surface p-6 md:p-7">
           <div className="flex items-center gap-2 text-brand-wine">
             <CalendarDays size={20} />
             <h3 className="text-2xl font-display">Resumen de tu turno</h3>
           </div>
 
-          {confirmation ? (
+          {pendingReservation ? (
             <div className="mt-4 space-y-2 text-sm text-slate-700">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-emerald-700">
-                <CheckCircle2 size={16} />
-                Turno cargado correctamente
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-amber-700">
+                <Clock3 size={16} />
+                Reserva pendiente de pago
               </div>
-              <p><strong>Codigo:</strong> #{confirmation.appointment.id}</p>
-              <p><strong>Servicio:</strong> {confirmation.appointment.service.name}</p>
-              <p><strong>Fecha:</strong> {confirmation.appointment.date}</p>
-              <p><strong>Horario:</strong> {confirmation.appointment.startTime}</p>
-              <p><strong>Estado:</strong> {confirmation.appointment.status}</p>
+              <p><strong>Codigo:</strong> #{pendingReservation.appointment.id}</p>
+              <p><strong>Servicio:</strong> {pendingReservation.appointment.service.name}</p>
+              <p><strong>Fecha:</strong> {pendingReservation.appointment.date}</p>
+              <p><strong>Horario:</strong> {pendingReservation.appointment.startTime}</p>
+              <p><strong>Estado de pago:</strong> {pendingReservation.paymentSummary.paymentStatus}</p>
+              <p><strong>Total:</strong> {formatBookingPrice(pendingReservation.paymentSummary.priceCents)}</p>
+              <p><strong>Sena:</strong> {formatBookingPrice(pendingReservation.paymentSummary.depositCents)}</p>
               <div className="pt-4">
                 <Button type="button" variant="secondary" onClick={handleResetFlow}>
                   Reservar otro turno
@@ -688,7 +842,23 @@ export function BookingForm() {
                   <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
                   <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
                   <SummaryRow label="Finaliza" value={selectedSlot?.endTime || "Pendiente"} />
+                  <SummaryRow
+                    label="Total"
+                    value={selectedService ? formatBookingPrice(selectedService.priceCents) : "Pendiente"}
+                  />
+                  <SummaryRow label="Sena" value={formatBookingPrice(depositCents)} />
+                  <SummaryRow label="Saldo restante" value={formatBookingPrice(remainingCents)} />
                 </div>
+              </div>
+
+              <div className="rounded-[1.25rem] border border-emerald-100 bg-emerald-50/70 px-4 py-4">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-700">
+                  Confirmacion de reserva
+                </p>
+                <p className="mt-2 text-sm leading-6 text-emerald-900">
+                  Para confirmar el turno te vamos a pedir una sena. El saldo restante lo abonas al momento de la
+                  atencion.
+                </p>
               </div>
 
               <div className="rounded-[1.25rem] border border-dashed border-rose-200 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-500">
@@ -703,6 +873,87 @@ export function BookingForm() {
           )}
         </div>
       </aside>
+
+      {!pendingReservation ? (
+        <div className="lg:hidden">
+          <div className="rounded-[1.4rem] border border-rose-100 bg-white/92 p-4 shadow-[0_18px_45px_-38px_rgba(90,64,74,0.26)]">
+            <div className="flex items-center gap-2 text-brand-wine">
+              <CalendarDays size={18} />
+              <h3 className="text-lg font-display text-brand-ink">Tu reserva</h3>
+            </div>
+
+            <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <SummaryRow label="Servicio" value={selectedService?.name || "Pendiente"} />
+              <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
+              <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
+              <SummaryRow label="Sena" value={formatBookingPrice(depositCents)} />
+            </div>
+
+            <div className="mt-4 rounded-[1rem] border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 text-sm leading-6 text-emerald-900">
+              Para confirmar el turno te vamos a pedir una sena. El saldo restante lo abonas al momento de la atencion.
+            </div>
+
+            {step === 4 ? (
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <Button type="button" className="w-full" onClick={() => setIsClientSheetOpen(true)}>
+                  Completar datos
+                </Button>
+                <Button type="button" variant="secondary" className="w-full" onClick={handleBackToTimeStep}>
+                  Cambiar horario
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {step === 4 && isMobileViewport && !pendingReservation ? (
+        <div
+          className={[
+            "fixed inset-0 z-40 bg-brand-ink/40 p-3 transition md:hidden",
+            isClientSheetOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+          ].join(" ")}
+        >
+          <div className="flex min-h-full items-end justify-center">
+            <div className="max-h-[88vh] w-full overflow-y-auto rounded-[1.8rem] bg-white p-5 shadow-2xl">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Ultimo paso</p>
+                  <h3 className="mt-1 font-display text-[2rem] leading-none text-brand-ink">Tus datos</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Completa tus datos y te redirigimos a Mercado Pago para abonar la sena.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsClientSheetOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-white text-brand-ink"
+                  aria-label="Cerrar formulario de datos"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-[1rem] border border-rose-100 bg-rose-50/45 px-4 py-3 text-sm text-slate-600">
+                <p className="font-semibold text-brand-ink">{selectedService?.name || "Servicio seleccionado"}</p>
+                <p className="mt-1">
+                  {date ? dayjs(date).format("DD/MM/YYYY") : "Fecha pendiente"} · {selectedSlot?.startTime || "Horario pendiente"}
+                </p>
+              </div>
+
+              <div className="mt-3">
+                <Button type="button" variant="secondary" className="w-full" onClick={handleBackToTimeStep}>
+                  Cambiar horario
+                </Button>
+              </div>
+
+              <div className="mt-5">
+                {clientStepContent}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,14 +1,17 @@
 import { benefits } from "../data/home-content";
 import { SectionHeading } from "../../../shared/ui/section-heading/SectionHeading";
+import { usePublicTenant } from "../../public/tenant/PublicTenantProvider";
 
 export function BenefitsSection() {
+  const { siteConfig } = usePublicTenant();
+
   return (
     <section className="py-20">
       <div className="container-shell">
         <SectionHeading
           eyebrow="Diferenciales"
-          title="Una experiencia simple para pacientes y ordenada para la clinica"
-          copy="La UI y la arquitectura se apoyan mutuamente: el sitio inspira confianza, mientras el sistema administra disponibilidad real y evita errores operativos."
+          title={`Una experiencia simple para clientes y ordenada para ${siteConfig.businessName}`}
+          copy="La interfaz publica y la arquitectura multi-tenant trabajan juntas para que cada negocio muestre solo su informacion real y administre mejor la agenda."
         />
         <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {benefits.map(({ title, copy, icon: Icon }) => (

@@ -1,0 +1,98 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: America/Argentina/Buenos_Aires
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: ${PORT:-4000}
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_URL: ${FRONTEND_URL}
+      APP_BASE_URL: ${APP_BASE_URL}
+      API_BASE_URL: ${API_BASE_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PLATFORM_APEX_DOMAIN: ${PLATFORM_APEX_DOMAIN}
+      PLATFORM_DOMAIN_CNAME_TARGET: ${PLATFORM_DOMAIN_CNAME_TARGET}
+      PLATFORM_DOMAIN_A_RECORDS: ${PLATFORM_DOMAIN_A_RECORDS}
+      PLATFORM_DOMAIN_SSL_STRATEGY: ${PLATFORM_DOMAIN_SSL_STRATEGY}
+      CADDY_ON_DEMAND_ASK_SECRET: ${CADDY_ON_DEMAND_ASK_SECRET}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      PLATFORM_EMAIL_FROM: ${PLATFORM_EMAIL_FROM}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      FRONTEND_ERROR_LOGGING_ENABLED: ${FRONTEND_ERROR_LOGGING_ENABLED:-true}
+      JOBS_ENABLED: ${JOBS_ENABLED:-true}
+      PENDING_RESERVATIONS_JOB_INTERVAL_MS: ${PENDING_RESERVATIONS_JOB_INTERVAL_MS:-60000}
+      APPOINTMENT_REMINDER_JOB_INTERVAL_MS: ${APPOINTMENT_REMINDER_JOB_INTERVAL_MS:-300000}
+      APPOINTMENT_REMINDER_LEAD_MINUTES: ${APPOINTMENT_REMINDER_LEAD_MINUTES:-1440}
+      APPOINTMENT_REMINDER_RETRY_DELAY_MINUTES: ${APPOINTMENT_REMINDER_RETRY_DELAY_MINUTES:-30}
+      APPOINTMENT_REMINDER_MAX_ATTEMPTS: ${APPOINTMENT_REMINDER_MAX_ATTEMPTS:-3}
+      LOGIN_RATE_LIMIT_WINDOW_MS: ${LOGIN_RATE_LIMIT_WINDOW_MS:-900000}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-5}
+    command: >
+      sh -c "npx prisma migrate deploy &&
+      node src/server.js"
+    expose:
+      - "4000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+        VITE_FRONTEND_ERROR_LOGGING_ENABLED: ${VITE_FRONTEND_ERROR_LOGGING_ENABLED:-true}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      CADDY_ASK_URL: http://backend:4000/internal/platform/tls-allow?secret=${CADDY_ON_DEMAND_ASK_SECRET}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:

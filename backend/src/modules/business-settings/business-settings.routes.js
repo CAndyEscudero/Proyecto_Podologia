@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const {
   getBusinessSettingsController,
+  getPublicBusinessSettingsController,
   updateBusinessSettingsController,
 } = require("./business-settings.controller");
 const { asyncHandler } = require("../../utils/async-handler");
@@ -11,6 +12,7 @@ const { updateBusinessSettingsValidation } = require("./business-settings.valida
 
 const router = Router();
 
+router.get("/public", asyncHandler(getPublicBusinessSettingsController));
 router.get("/", requireAuth, requireRoles("OWNER", "ADMIN"), asyncHandler(getBusinessSettingsController));
 router.patch("/", requireAuth, requireRoles("OWNER", "ADMIN"), updateBusinessSettingsValidation, validateRequest, asyncHandler(updateBusinessSettingsController));
 

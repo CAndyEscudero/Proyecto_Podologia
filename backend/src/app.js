@@ -1,49 +1,46 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const morgan = require("morgan");
 const { env } = require("./config/env");
 const routes = require("./routes");
 const { notFound } = require("./middleware/not-found");
 const { errorHandler } = require("./middleware/error-handler");
 const { sanitizeInput } = require("./middleware/sanitize-input");
+const { resolveTenant } = require("./middleware/resolve-tenant");
+const { requestContext } = require("./middleware/request-context");
+const { requestLogger } = require("./middleware/request-logger");
+const platformRoutes = require("./modules/platform/platform.routes");
+const {
+  buildAllowedOrigins,
+  createCorsOriginResolver,
+} = require("./middleware/cors-config");
 
 const app = express();
 app.disable("x-powered-by");
-const allowedOrigins = new Set([
-  env.frontendUrl,
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5174",
-  "http://localhost:4173",
-  "http://127.0.0.1:4173",
-]);
+const allowedOrigins = buildAllowedOrigins(env);
 
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error(`Origin not allowed by CORS: ${origin}`));
-    },
+    origin: createCorsOriginResolver({
+      allowedOrigins,
+      nodeEnv: env.nodeEnv,
+    }),
     credentials: true,
   })
 );
 app.use(helmet());
-app.use(morgan("dev"));
+app.use(requestContext);
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(sanitizeInput);
+app.use(requestLogger);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api", routes);
+app.use("/internal/platform", platformRoutes);
+app.use("/api", resolveTenant, routes);
 app.use(notFound);
 app.use(errorHandler);
 

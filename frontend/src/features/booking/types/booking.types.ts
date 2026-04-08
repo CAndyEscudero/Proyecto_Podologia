@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import type { Client, Service, AvailabilitySlot } from "../../../shared/types/domain";
-import type { AvailableSlotsResponse, CreateAppointmentResponse } from "../../../shared/types/api";
+import type {
+  AvailableSlotsResponse,
+  CreateAppointmentPaymentResponse,
+  CreateAppointmentResponse,
+} from "../../../shared/types/api";
 import type {
   AppointmentClientPayload,
   CreateAppointmentPayload,
@@ -8,7 +12,11 @@ import type {
 } from "../../admin/appointments/types/appointments.types";
 
 export type { Client, Service, AvailabilitySlot } from "../../../shared/types/domain";
-export type { AvailableSlotsResponse, CreateAppointmentResponse } from "../../../shared/types/api";
+export type {
+  AvailableSlotsResponse,
+  CreateAppointmentPaymentResponse,
+  CreateAppointmentResponse,
+} from "../../../shared/types/api";
 export type {
   AppointmentClientPayload,
   CreateAppointmentPayload,
@@ -54,4 +62,10 @@ export interface BookingFieldProps {
 export interface BookingSummaryRowProps {
   label: string;
   value: string;
+}
+
+export interface BookingPaymentStatusCopy {
+  title: string;
+  description: string;
+  tone: "success" | "warning" | "danger";
 }

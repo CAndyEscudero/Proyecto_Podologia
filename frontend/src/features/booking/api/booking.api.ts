@@ -1,5 +1,8 @@
 import { http } from "../../../shared/api/http";
-import type { CreateAppointmentResponse, AvailableSlotsResponse } from "../../../shared/types/api";
+import type {
+  CreateAppointmentPaymentResponse,
+  AvailableSlotsResponse,
+} from "../../../shared/types/api";
 import type { Service } from "../../../shared/types/domain";
 import type { CreateAppointmentPayload } from "../types/booking.types";
 
@@ -18,9 +21,12 @@ export async function getAvailableSlots(
   return data;
 }
 
-export async function createAppointment(
+export async function createPaymentReservation(
   payload: CreateAppointmentPayload
-): Promise<CreateAppointmentResponse> {
-  const { data } = await http.post<CreateAppointmentResponse>("/appointments", payload);
+): Promise<CreateAppointmentPaymentResponse> {
+  const { data } = await http.post<CreateAppointmentPaymentResponse>(
+    "/appointments/payment-reservations",
+    payload
+  );
   return data;
 }

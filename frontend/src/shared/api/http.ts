@@ -11,5 +11,10 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (typeof window !== "undefined") {
+    config.headers["x-tenant-host"] = window.location.host;
+  }
+
   return config;
 });

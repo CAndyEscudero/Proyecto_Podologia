@@ -22,6 +22,7 @@ import type {
   AppointmentsTableProps,
   AppointmentTableView,
 } from "../types/appointments.types";
+import { formatBookingPrice } from "../../../booking/utils/booking-formatters";
 
 const statusOptions: ReadonlyArray<{ label: string; value: AppointmentStatus }> = [
   { label: "Pendiente", value: "PENDING" },
@@ -35,6 +36,14 @@ const statusStyles: Record<AppointmentStatus, string> = {
   CONFIRMED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   CANCELED: "border-rose-200 bg-rose-50 text-rose-700",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
+};
+
+const paymentStatusStyles: Record<Appointment["paymentStatus"], string> = {
+  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
+  APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  REJECTED: "border-rose-200 bg-rose-50 text-rose-700",
+  EXPIRED: "border-slate-200 bg-slate-100 text-slate-700",
+  CANCELLED: "border-slate-200 bg-slate-100 text-slate-700",
 };
 
 const agendaBlocks = [
@@ -106,6 +115,7 @@ export function AppointmentsTable({
       confirmed: appointments.filter((appointment) => appointment.status === "CONFIRMED").length,
       completed: appointments.filter((appointment) => appointment.status === "COMPLETED").length,
       canceled: appointments.filter((appointment) => appointment.status === "CANCELED").length,
+      pendingPayments: appointments.filter((appointment) => appointment.paymentStatus === "PENDING").length,
     }),
     [appointments]
   );
@@ -376,12 +386,13 @@ export function AppointmentsTable({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <SummaryPill label="Turnos en vista" value={summary.total} tone="text-brand-ink" />
           <SummaryPill label="Pendientes" value={summary.pending} tone="text-amber-700" />
           <SummaryPill label="Confirmados" value={summary.confirmed} tone="text-emerald-700" />
           <SummaryPill label="Realizados" value={summary.completed} tone="text-slate-700" />
           <SummaryPill label="Cancelados" value={summary.canceled} tone="text-rose-700" />
+          <SummaryPill label="Pagos pendientes" value={summary.pendingPayments} tone="text-amber-700" />
         </div>
       </div>
 
@@ -437,6 +448,29 @@ export function AppointmentsTable({
                       <div className="mt-3 grid gap-1 text-xs text-slate-500">
                         <p>{appointment.client.phone}</p>
                         <p className="truncate">{appointment.client.email || "Sin email"}</p>
+                      </div>
+
+                      <div className="mt-4 space-y-2 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/70 px-3 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                            Pago
+                          </span>
+                          <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
+                        </div>
+                        <div className="grid gap-1 text-xs text-slate-500">
+                          <p>
+                            <strong className="font-semibold text-slate-700">Total:</strong>{" "}
+                            {formatBookingPrice(appointment.priceCents)}
+                          </p>
+                          <p>
+                            <strong className="font-semibold text-slate-700">Sena:</strong>{" "}
+                            {formatBookingPrice(appointment.depositCents)}
+                          </p>
+                          <p>
+                            <strong className="font-semibold text-slate-700">Referencia:</strong>{" "}
+                            {appointment.paymentReference || "Sin referencia"}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -536,7 +570,26 @@ export function AppointmentsTable({
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <StatusBadge status={appointment.status} />
+                    <div className="min-w-[240px] space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <StatusBadge status={appointment.status} />
+                        <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
+                      </div>
+                      <div className="rounded-[1rem] border border-slate-200/80 bg-slate-50/80 px-3 py-3 text-xs text-slate-500">
+                        <p>
+                          <span className="font-semibold text-slate-700">Total:</span>{" "}
+                          {formatBookingPrice(appointment.priceCents)}
+                        </p>
+                        <p className="mt-1">
+                          <span className="font-semibold text-slate-700">Sena:</span>{" "}
+                          {formatBookingPrice(appointment.depositCents)}
+                        </p>
+                        <p className="mt-1">
+                          <span className="font-semibold text-slate-700">Referencia:</span>{" "}
+                          {appointment.paymentReference || "Sin referencia"}
+                        </p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-4">
                     <StatusQuickActions
@@ -591,6 +644,19 @@ function StatusBadge({ status }: { status: AppointmentStatus }) {
       )}
     >
       {translateStatus(status)}
+    </span>
+  );
+}
+
+function PaymentStatusBadge({ paymentStatus }: { paymentStatus: Appointment["paymentStatus"] }) {
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide",
+        paymentStatusStyles[paymentStatus]
+      )}
+    >
+      {translatePaymentStatus(paymentStatus)}
     </span>
   );
 }
@@ -711,4 +777,16 @@ function translateStatus(status: AppointmentStatus) {
   };
 
   return labels[status];
+}
+
+function translatePaymentStatus(paymentStatus: Appointment["paymentStatus"]) {
+  const labels: Record<Appointment["paymentStatus"], string> = {
+    PENDING: "Pago pendiente",
+    APPROVED: "Pago aprobado",
+    REJECTED: "Pago rechazado",
+    EXPIRED: "Pago vencido",
+    CANCELLED: "Pago cancelado",
+  };
+
+  return labels[paymentStatus];
 }

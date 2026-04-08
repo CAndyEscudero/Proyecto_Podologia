@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, CalendarClock, ChartColumn, GripVertical, UsersRound } from "lucide-react";
 import type { AdminSummaryItem } from "../types/appointments.types";
+import { buildTenantStorageKey } from "../../../../shared/utils/tenant-storage";
 
 interface AdminSummaryProps {
   items: AdminSummaryItem[];
@@ -23,7 +24,9 @@ export function AdminSummary({ items }: AdminSummaryProps) {
       return;
     }
 
-    const savedLabels = window.localStorage.getItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY);
+
+    const savedLabels = window.localStorage.getItem(buildTenantStorageKey(STORAGE_KEY));
     if (!savedLabels) {
       setOrderedLabels(visibleItems.map((item) => item.label));
       return;
@@ -47,7 +50,7 @@ export function AdminSummary({ items }: AdminSummaryProps) {
       return;
     }
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(orderedLabels));
+    window.localStorage.setItem(buildTenantStorageKey(STORAGE_KEY), JSON.stringify(orderedLabels));
   }, [orderedLabels]);
 
   const orderedItems = orderedLabels

@@ -4,6 +4,7 @@ const { asyncHandler } = require("../../utils/async-handler");
 const { loginValidation } = require("./auth.validation");
 const { validateRequest } = require("../../middleware/validate-request");
 const { requireAuth } = require("../../middleware/auth");
+const { requirePlatformAdminHost } = require("../../middleware/require-platform-admin-host");
 const { createMemoryRateLimit } = require("../../middleware/rate-limit");
 const { env } = require("../../config/env");
 
@@ -14,7 +15,14 @@ const loginRateLimit = createMemoryRateLimit({
   message: "Demasiados intentos de login. Intenta nuevamente mas tarde.",
 });
 
-router.post("/login", loginRateLimit, loginValidation, validateRequest, asyncHandler(loginController));
+router.post(
+  "/login",
+  requirePlatformAdminHost,
+  loginRateLimit,
+  loginValidation,
+  validateRequest,
+  asyncHandler(loginController)
+);
 router.get("/me", requireAuth, asyncHandler(meController));
 
 module.exports = router;

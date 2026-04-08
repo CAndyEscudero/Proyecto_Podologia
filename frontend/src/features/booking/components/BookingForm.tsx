@@ -36,6 +36,7 @@ import {
   formatBookingPrice,
 } from "../utils/booking-formatters";
 import { buildWhatsAppUrl } from "../../../shared/utils/whatsapp";
+import { usePublicTenant } from "../../public/tenant/PublicTenantProvider";
 import type {
   BookingFieldProps,
   BookingFormValues,
@@ -44,7 +45,6 @@ import type {
 } from "../types/booking.types";
 
 const today = dayjs().format("YYYY-MM-DD");
-const maxBookingDate = dayjs().add(45, "day").format("YYYY-MM-DD");
 const personNameRegex = /^[\p{L}' -]{2,80}$/u;
 const phoneRegex = /^[0-9+() -]{8,20}$/;
 
@@ -79,6 +79,7 @@ function getApiMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export function BookingForm() {
+  const { publicSettings, siteConfig } = usePublicTenant();
   const [pendingReservation, setPendingReservation] = useState<CreateAppointmentPaymentResponse | null>(null);
   const [step, setStep] = useState<BookingStep["id"]>(1);
   const [isClientSheetOpen, setIsClientSheetOpen] = useState(false);
@@ -111,6 +112,8 @@ export function BookingForm() {
   const serviceId = watch("serviceId");
   const date = watch("date");
   const startTime = watch("startTime");
+  const bookingWindowDays = publicSettings?.bookingWindowDays || 45;
+  const maxBookingDate = dayjs().add(bookingWindowDays, "day").format("YYYY-MM-DD");
 
   const {
     services,
@@ -131,7 +134,10 @@ export function BookingForm() {
   const selectedService = services.find((service: Service) => String(service.id) === serviceId);
   const selectedSlot = slots.find((slot) => slot.startTime === startTime);
   const activeStep = steps.find((item) => item.id === step) || steps[0];
-  const depositCents = calculateDepositCents(selectedService?.priceCents);
+  const depositCents = calculateDepositCents(
+    selectedService?.priceCents,
+    publicSettings?.depositPercentage || 50
+  );
   const remainingCents = calculateRemainingCents(selectedService?.priceCents, depositCents);
   const serviceNeedsManualQuote = Boolean(selectedService && !selectedService.priceCents);
 
@@ -327,11 +333,17 @@ export function BookingForm() {
     handleDateChange(nextAvailableOption.date);
   }
 
-  const manualQuoteWhatsAppUrl = selectedService
-    ? buildWhatsAppUrl(
-        `Hola, quiero consultar el precio y reservar el servicio "${selectedService.name}".`
-      )
-    : buildWhatsAppUrl("Hola, quiero consultar un servicio y reservar un turno.");
+  const manualQuoteWhatsAppUrl = siteConfig.whatsappEnabled
+    ? selectedService
+      ? buildWhatsAppUrl(
+          `Hola, quiero consultar el precio y reservar el servicio "${selectedService.name}".`,
+          siteConfig.whatsappNumber
+        )
+      : buildWhatsAppUrl(
+          siteConfig.whatsappDefaultMessage || "Hola, quiero consultar un servicio y reservar un turno.",
+          siteConfig.whatsappNumber
+        )
+    : null;
 
   const currentStepStatus = `${activeStep.id} de ${steps.length}`;
   const mobileSummaryText = selectedService
@@ -376,16 +388,18 @@ export function BookingForm() {
         <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
           <p className="font-semibold">Este servicio todavia no tiene precio online configurado.</p>
           <p className="mt-2 leading-6">
-            Para reservarlo, escribinos por WhatsApp y te ayudamos manualmente con el valor y la coordinacion.
+            Para reservarlo, contacta al negocio por su canal directo y te ayudamos manualmente con el valor y la coordinacion.
           </p>
-          <div className="mt-4">
-            <a href={manualQuoteWhatsAppUrl} target="_blank" rel="noreferrer">
-              <Button type="button" variant="secondary" className="gap-2">
-                Consultar por WhatsApp
-                <ExternalLink size={16} />
-              </Button>
-            </a>
-          </div>
+          {manualQuoteWhatsAppUrl ? (
+            <div className="mt-4">
+              <a href={manualQuoteWhatsAppUrl} target="_blank" rel="noreferrer">
+                <Button type="button" variant="secondary" className="gap-2">
+                  Consultar por WhatsApp
+                  <ExternalLink size={16} />
+                </Button>
+              </a>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="mt-6 flex flex-wrap gap-4">
@@ -746,7 +760,7 @@ export function BookingForm() {
                       Paso 4
                     </p>
                     <p className="text-sm text-slate-500 md:mt-1">
-                      Ya tenes todo elegido. Completa tus datos y te redirigimos a Mercado Pago para abonar la sena del 50%.
+                      Ya tenes todo elegido. Completa tus datos y te redirigimos a Mercado Pago para abonar la sena.
                     </p>
                   </div>
                   <Button type="button" variant="secondary" className="gap-2" onClick={handleBackToTimeStep}>
@@ -781,7 +795,7 @@ export function BookingForm() {
               <p><strong>Horario:</strong> {pendingReservation.appointment.startTime}</p>
               <p><strong>Estado de pago:</strong> {pendingReservation.paymentSummary.paymentStatus}</p>
               <p><strong>Total:</strong> {formatBookingPrice(pendingReservation.paymentSummary.priceCents)}</p>
-              <p><strong>Sena 50%:</strong> {formatBookingPrice(pendingReservation.paymentSummary.depositCents)}</p>
+              <p><strong>Sena:</strong> {formatBookingPrice(pendingReservation.paymentSummary.depositCents)}</p>
               <div className="pt-4">
                 <Button type="button" variant="secondary" onClick={handleResetFlow}>
                   Reservar otro turno
@@ -832,7 +846,7 @@ export function BookingForm() {
                     label="Total"
                     value={selectedService ? formatBookingPrice(selectedService.priceCents) : "Pendiente"}
                   />
-                  <SummaryRow label="Seña 50%" value={formatBookingPrice(depositCents)} />
+                  <SummaryRow label="Sena" value={formatBookingPrice(depositCents)} />
                   <SummaryRow label="Saldo restante" value={formatBookingPrice(remainingCents)} />
                 </div>
               </div>
@@ -842,8 +856,8 @@ export function BookingForm() {
                   Confirmacion de reserva
                 </p>
                 <p className="mt-2 text-sm leading-6 text-emerald-900">
-                  Para confirmar el turno te vamos a pedir una sena del 50%. El saldo restante lo abonas al momento
-                  de la atencion.
+                  Para confirmar el turno te vamos a pedir una sena. El saldo restante lo abonas al momento de la
+                  atencion.
                 </p>
               </div>
 
@@ -872,11 +886,11 @@ export function BookingForm() {
               <SummaryRow label="Servicio" value={selectedService?.name || "Pendiente"} />
               <SummaryRow label="Fecha" value={date ? dayjs(date).format("DD/MM/YYYY") : "Pendiente"} />
               <SummaryRow label="Horario" value={selectedSlot?.startTime || "Pendiente"} />
-              <SummaryRow label="Seña 50%" value={formatBookingPrice(depositCents)} />
+              <SummaryRow label="Sena" value={formatBookingPrice(depositCents)} />
             </div>
 
             <div className="mt-4 rounded-[1rem] border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 text-sm leading-6 text-emerald-900">
-              Para confirmar el turno te vamos a pedir una sena del 50%. El saldo restante lo abonas al momento de la atencion.
+              Para confirmar el turno te vamos a pedir una sena. El saldo restante lo abonas al momento de la atencion.
             </div>
 
             {step === 4 ? (
@@ -907,7 +921,7 @@ export function BookingForm() {
                   <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-wine">Ultimo paso</p>
                   <h3 className="mt-1 font-display text-[2rem] leading-none text-brand-ink">Tus datos</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Completa tus datos y te redirigimos a Mercado Pago para abonar la sena del 50%.
+                    Completa tus datos y te redirigimos a Mercado Pago para abonar la sena.
                   </p>
                 </div>
                 <button

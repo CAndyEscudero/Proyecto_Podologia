@@ -1,12 +1,11 @@
+const { logInfo } = require("../../observability/logger");
+
 function logPaymentAudit(event, details = {}) {
-  const payload = {
+  logInfo("payments.audit", {
     scope: "payments",
     event,
-    timestamp: new Date().toISOString(),
     ...details,
-  };
-
-  console.info(JSON.stringify(payload));
+  });
 }
 
 module.exports = {

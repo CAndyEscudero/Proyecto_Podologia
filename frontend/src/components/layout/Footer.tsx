@@ -1,6 +1,8 @@
-import { siteConfig } from "../../app/config/site-config";
+import { usePublicTenant } from "../../features/public/tenant/PublicTenantProvider";
 
 export function Footer() {
+  const { siteConfig } = usePublicTenant();
+
   return (
     <footer className="border-t border-rose-100/80 bg-white/80 py-10">
       <div className="container-shell flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -10,9 +12,7 @@ export function Footer() {
         </div>
         <div className="text-sm text-slate-600">
           <p>{siteConfig.phone}</p>
-          <a href={siteConfig.instagramUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-wine">
-            Instagram
-          </a>
+          {siteConfig.contactEmail ? <p>{siteConfig.contactEmail}</p> : null}
         </div>
       </div>
     </footer>

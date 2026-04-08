@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "test": "node --test --test-isolation=none \"tests/*.test.js\"",
     "prisma:generate": "prisma generate",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "tenant:onboard": "node scripts/onboard-tenant.js",
+    "tenant:inspect": "node scripts/inspect-tenant.js",
+    "jobs:run-once": "node scripts/run-jobs-once.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

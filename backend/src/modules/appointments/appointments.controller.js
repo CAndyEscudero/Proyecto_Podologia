@@ -1,37 +1,42 @@
 const appointmentService = require("./appointments.service");
 
 async function createAppointmentController(req, res) {
-  const appointment = await appointmentService.createAppointment(req.body);
+  const appointment = await appointmentService.createAppointment(req.tenant.id, req.body);
   res.status(201).json(appointment);
 }
 
 async function createPaymentReservationController(req, res) {
-  const appointment = await appointmentService.createPaymentReservation(req.body);
+  const appointment = await appointmentService.createPaymentReservation(req.tenant.id, req.body);
   res.status(201).json(appointment);
 }
 
 async function listAppointmentsController(req, res) {
-  const appointments = await appointmentService.listAppointments(req.query);
+  const appointments = await appointmentService.listAppointments(req.tenant.id, req.query);
   res.json(appointments);
 }
 
 async function getAppointmentController(req, res) {
-  const appointment = await appointmentService.getAppointmentById(req.params.id);
+  const appointment = await appointmentService.getAppointmentById(req.tenant.id, req.params.id);
   res.json(appointment);
 }
 
 async function updateAppointmentController(req, res) {
-  const appointment = await appointmentService.updateAppointment(req.params.id, req.body);
+  const appointment = await appointmentService.updateAppointment(req.tenant.id, req.params.id, req.body);
   res.json(appointment);
 }
 
 async function updateAppointmentStatusController(req, res) {
-  const appointment = await appointmentService.updateAppointmentStatus(req.params.id, req.body.status);
+  const appointment = await appointmentService.updateAppointmentStatus(
+    req.tenant.id,
+    req.params.id,
+    req.body.status
+  );
   res.json(appointment);
 }
 
 async function rescheduleAppointmentController(req, res) {
   const appointment = await appointmentService.rescheduleAppointment(
+    req.tenant.id,
     req.params.id,
     req.body.date,
     req.body.startTime
@@ -40,7 +45,7 @@ async function rescheduleAppointmentController(req, res) {
 }
 
 async function deleteAppointmentController(req, res) {
-  await appointmentService.deleteAppointment(req.params.id);
+  await appointmentService.deleteAppointment(req.tenant.id, req.params.id);
   res.status(204).send();
 }
 

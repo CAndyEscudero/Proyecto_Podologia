@@ -1,16 +1,20 @@
 export interface ApiErrorResponse {
   message?: string;
+  code?: string;
+  details?: Record<string, unknown> | null;
 }
 
-import type { Appointment, AvailabilitySlot, PaymentOption, Service, User } from "./domain";
+import type { Appointment, AuthTenant, AvailabilitySlot, PaymentOption, Service, User } from "./domain";
 import type { PaymentSummary } from "./payments";
 
 export interface LoginResponse {
   token: string;
+  tenant?: AuthTenant | null;
 }
 
 export interface MeResponse {
   user: User;
+  tenant?: AuthTenant | null;
 }
 
 export interface CreateAppointmentResponse {

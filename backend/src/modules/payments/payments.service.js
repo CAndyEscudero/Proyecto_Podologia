@@ -2,13 +2,25 @@ const { prisma } = require("../../config/prisma");
 const { env } = require("../../config/env");
 const { AppError } = require("../../utils/app-error");
 const { logPaymentAudit } = require("./payments.audit");
+const { sendPaymentStatusEmails } = require("../notifications/email.service");
+const { buildReminderStateForAppointment } = require("../notifications/reminder-schedule.service");
+const {
+  getFreshMercadoPagoConnection,
+  markMercadoPagoWebhookReceived,
+} = require("./mercadopago-oauth.service");
 
-function calculateDepositCents(priceCents) {
+const LOCAL_HOSTNAME_PATTERN = /(^localhost$)|(^127(?:\.\d{1,3}){3}$)|(\.localhost$)/i;
+
+function calculateDepositCents(priceCents, depositPercentage = 50) {
   if (!Number.isInteger(priceCents) || priceCents <= 0) {
     return null;
   }
 
-  return Math.ceil(priceCents * 0.5);
+  if (!Number.isInteger(depositPercentage) || depositPercentage <= 0 || depositPercentage > 100) {
+    return null;
+  }
+
+  return Math.ceil(priceCents * (depositPercentage / 100));
 }
 
 function buildPendingPaymentWindow(minutes = 15) {
@@ -17,13 +29,108 @@ function buildPendingPaymentWindow(minutes = 15) {
   return expiresAt;
 }
 
-function ensureMercadoPagoConfigured() {
-  if (!env.mercadoPagoAccessToken) {
+function normalizeTenantId(value) {
+  const parsedId = Number(value);
+  return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
+}
+
+function isLocalHostname(hostname) {
+  return typeof hostname === "string" && LOCAL_HOSTNAME_PATTERN.test(hostname.trim().toLowerCase());
+}
+
+function buildTenantAppBaseUrl(hostname) {
+  const fallbackUrl = new URL(env.appBaseUrl);
+
+  if (!hostname) {
+    return fallbackUrl.toString();
+  }
+
+  const protocol =
+    env.nodeEnv !== "production" || isLocalHostname(hostname) ? fallbackUrl.protocol : "https:";
+  const shouldReusePort = env.nodeEnv !== "production" || isLocalHostname(hostname);
+  const port = shouldReusePort && fallbackUrl.port ? `:${fallbackUrl.port}` : "";
+
+  return `${protocol}//${hostname}${port}`;
+}
+
+async function getTenantMercadoPagoContext(tenantId) {
+  const parsedTenantId = normalizeTenantId(tenantId);
+
+  if (!parsedTenantId) {
+    throw new AppError("No se pudo resolver el tenant del pago", 400);
+  }
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: parsedTenantId },
+    include: {
+      businessSettings: true,
+      domains: {
+        where: { status: "ACTIVE" },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+      },
+    },
+  });
+
+  if (!tenant) {
+    throw new AppError("Tenant no encontrado para operar pagos", 404);
+  }
+
+  if (tenant.status !== "ACTIVE") {
+    throw new AppError("El tenant no esta activo para operar pagos", 403);
+  }
+
+  const primaryDomain = tenant.domains[0] || null;
+  const connection = await getFreshMercadoPagoConnection(tenant.id);
+
+  return {
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+    settings: tenant.businessSettings,
+    connection,
+    primaryDomain,
+    appBaseUrl: buildTenantAppBaseUrl(primaryDomain?.hostname || null),
+  };
+}
+
+function resolveTenantMercadoPagoAccessToken(tenantContext) {
+  if (tenantContext.connection?.status === "CONNECTED" && tenantContext.connection.accessToken) {
+    return tenantContext.connection.accessToken;
+  }
+
+  return tenantContext.settings?.mercadoPagoAccessToken || "";
+}
+
+function ensureMercadoPagoConfigured(tenantContext) {
+  if (!tenantContext.settings?.mercadoPagoEnabled) {
+    throw new AppError("Mercado Pago no esta habilitado para este negocio", 503);
+  }
+
+  if (!resolveTenantMercadoPagoAccessToken(tenantContext)) {
     throw new AppError(
-      "Mercado Pago no esta configurado. Carga MP_ACCESS_TOKEN para habilitar pagos.",
+      "Mercado Pago no esta configurado para este negocio. Conecta la cuenta del tenant.",
       503
     );
   }
+}
+
+function buildTenantNotificationUrl(tenantId) {
+  const url = new URL("/api/payments/webhook", env.apiBaseUrl);
+  url.searchParams.set("tenantId", String(tenantId));
+  return url.toString();
+}
+
+function buildTenantBackUrls(tenantId) {
+  const buildReturnUrl = (status) => {
+    const url = new URL(`/api/payments/return/${status}`, env.apiBaseUrl);
+    url.searchParams.set("tenantId", String(tenantId));
+    return url.toString();
+  };
+
+  return {
+    success: buildReturnUrl("success"),
+    pending: buildReturnUrl("pending"),
+    failure: buildReturnUrl("failure"),
+  };
 }
 
 function buildExternalReference(appointmentId) {
@@ -84,18 +191,21 @@ function hasPaymentWindowExpired(paymentExpiresAt) {
 }
 
 async function createMercadoPagoPreference({ appointment, client, service }) {
-  ensureMercadoPagoConfigured();
+  const tenantContext = await getTenantMercadoPagoContext(appointment.tenantId);
+  ensureMercadoPagoConfigured(tenantContext);
 
   if (!appointment.depositCents || appointment.depositCents <= 0) {
-    throw new AppError("La reserva no tiene una seña valida para cobrar", 409);
+    throw new AppError("La reserva no tiene una sena valida para cobrar", 409);
   }
 
   const externalReference = buildExternalReference(appointment.id);
-  const webhookUrl = `${env.apiBaseUrl}/api/payments/webhook`;
+  const webhookUrl = buildTenantNotificationUrl(tenantContext.tenantId);
+  const backUrls = buildTenantBackUrls(tenantContext.tenantId);
+
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.mercadoPagoAccessToken}`,
+      Authorization: `Bearer ${resolveTenantMercadoPagoAccessToken(tenantContext)}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -103,10 +213,9 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
         {
           id: String(service.id),
           title: `${service.name}`,
-          description: "Reserva confirmada con sena del 50% del servicio",
+          description: "Reserva confirmada con sena del servicio",
           currency_id: "ARS",
           quantity: 1,
-          // In this app service prices are entered in ARS whole units.
           unit_price: appointment.depositCents,
         },
       ],
@@ -115,17 +224,14 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
         surname: client.lastName,
         email: client.email || undefined,
       },
-      back_urls: {
-        success: env.mercadoPagoSuccessUrl,
-        pending: env.mercadoPagoPendingUrl,
-        failure: env.mercadoPagoFailureUrl,
-      },
+      back_urls: backUrls,
       notification_url: webhookUrl,
       auto_return: "approved",
       external_reference: externalReference,
       metadata: {
         appointmentId: appointment.id,
         serviceId: service.id,
+        tenantId: tenantContext.tenantId,
         paymentOption: appointment.paymentOption,
       },
     }),
@@ -146,6 +252,7 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
   });
 
   logPaymentAudit("preference.created", {
+    tenantId: tenantContext.tenantId,
     appointmentId: appointment.id,
     serviceId: service.id,
     preferenceId: data.id,
@@ -160,12 +267,12 @@ async function createMercadoPagoPreference({ appointment, client, service }) {
   };
 }
 
-async function getMercadoPagoPayment(paymentId) {
-  ensureMercadoPagoConfigured();
+async function getMercadoPagoPayment(paymentId, tenantContext) {
+  ensureMercadoPagoConfigured(tenantContext);
 
   const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: {
-      Authorization: `Bearer ${env.mercadoPagoAccessToken}`,
+      Authorization: `Bearer ${resolveTenantMercadoPagoAccessToken(tenantContext)}`,
     },
   });
 
@@ -177,12 +284,14 @@ async function getMercadoPagoPayment(paymentId) {
   return response.json();
 }
 
-async function processMercadoPagoWebhook(payload) {
+async function processMercadoPagoWebhook(payload, tenantId) {
   const paymentId = payload?.data?.id || payload?.id;
   const topic = payload?.type || payload?.topic;
+  const tenantContext = await getTenantMercadoPagoContext(tenantId);
 
   if (!paymentId || (topic && topic !== "payment")) {
     logPaymentAudit("webhook.ignored", {
+      tenantId: tenantContext.tenantId,
       reason: "unsupported_payload",
       paymentId: paymentId || null,
       topic: topic || null,
@@ -190,11 +299,12 @@ async function processMercadoPagoWebhook(payload) {
     return { ignored: true };
   }
 
-  const payment = await getMercadoPagoPayment(paymentId);
+  const payment = await getMercadoPagoPayment(paymentId, tenantContext);
   const appointmentId = extractAppointmentId(payment.external_reference);
 
   if (!appointmentId) {
     logPaymentAudit("webhook.ignored", {
+      tenantId: tenantContext.tenantId,
       reason: "missing_appointment_reference",
       paymentId: String(payment.id),
       externalReference: payment.external_reference || null,
@@ -203,12 +313,16 @@ async function processMercadoPagoWebhook(payload) {
     return { ignored: true };
   }
 
-  const currentAppointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
+  const currentAppointment = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      tenantId: tenantContext.tenantId,
+    },
   });
 
   if (!currentAppointment) {
     logPaymentAudit("webhook.ignored", {
+      tenantId: tenantContext.tenantId,
       reason: "appointment_not_found",
       paymentId: String(payment.id),
       appointmentId,
@@ -225,6 +339,7 @@ async function processMercadoPagoWebhook(payload) {
 
   if (isDuplicateNotification) {
     logPaymentAudit("webhook.duplicate", {
+      tenantId: tenantContext.tenantId,
       appointmentId,
       paymentId: String(payment.id),
       status: payment.status,
@@ -241,7 +356,8 @@ async function processMercadoPagoWebhook(payload) {
 
   const isLateApprovedPayment =
     payment.status === "approved" &&
-    (currentAppointment.paymentStatus === "EXPIRED" || hasPaymentWindowExpired(currentAppointment.paymentExpiresAt));
+    (currentAppointment.paymentStatus === "EXPIRED" ||
+      hasPaymentWindowExpired(currentAppointment.paymentExpiresAt));
 
   if (isLateApprovedPayment) {
     await prisma.appointment.update({
@@ -251,10 +367,16 @@ async function processMercadoPagoWebhook(payload) {
         paymentStatus: "APPROVED",
         paymentReference: String(payment.id),
         paymentApprovedAt: new Date(payment.date_approved || new Date()),
+        ...buildReminderStateForAppointment({
+          date: currentAppointment.date,
+          startTime: currentAppointment.startTime,
+          status: "CANCELED",
+        }),
       },
     });
 
     logPaymentAudit("webhook.manual_review", {
+      tenantId: tenantContext.tenantId,
       appointmentId,
       paymentId: String(payment.id),
       status: payment.status,
@@ -278,15 +400,28 @@ async function processMercadoPagoWebhook(payload) {
       paymentReference: String(payment.id),
       paymentApprovedAt:
         statusMapping.paymentStatus === "APPROVED" ? new Date(payment.date_approved || new Date()) : null,
+      ...buildReminderStateForAppointment({
+        date: currentAppointment.date,
+        startTime: currentAppointment.startTime,
+        status: statusMapping.appointmentStatus,
+      }),
     },
   });
 
   logPaymentAudit("webhook.processed", {
+    tenantId: tenantContext.tenantId,
     appointmentId,
     paymentId: String(payment.id),
     paymentStatus: statusMapping.paymentStatus,
     appointmentStatus: statusMapping.appointmentStatus,
   });
+
+  await sendPaymentStatusEmails({
+    tenantId: tenantContext.tenantId,
+    appointmentId,
+    paymentStatus: statusMapping.paymentStatus,
+  });
+  await markMercadoPagoWebhookReceived(tenantContext.tenantId, statusMapping.paymentStatus);
 
   return {
     ignored: false,
@@ -296,9 +431,34 @@ async function processMercadoPagoWebhook(payload) {
   };
 }
 
-async function expirePendingReservations() {
+async function getMercadoPagoWebhookSecret(tenantId) {
+  const tenantContext = await getTenantMercadoPagoContext(tenantId);
+
+  if (tenantContext.connection?.status === "CONNECTED") {
+    return env.mercadoPagoPlatformWebhookSecret || "";
+  }
+
+  return tenantContext.settings?.mercadoPagoWebhookSecret || "";
+}
+
+async function buildTenantFrontendReturnUrl(tenantId, status, query = {}) {
+  const tenantContext = await getTenantMercadoPagoContext(tenantId);
+  const frontendUrl = new URL("/reservas/resultado", tenantContext.appBaseUrl);
+  frontendUrl.searchParams.set("status", status);
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && value !== "") {
+      frontendUrl.searchParams.set(key, String(value));
+    }
+  }
+
+  return frontendUrl.toString();
+}
+
+async function expirePendingReservations(tenantId = null) {
   const result = await prisma.appointment.updateMany({
     where: {
+      ...(tenantId ? { tenantId } : {}),
       status: "PENDING",
       paymentStatus: "PENDING",
       paymentExpiresAt: {
@@ -313,6 +473,7 @@ async function expirePendingReservations() {
 
   if (result.count > 0) {
     logPaymentAudit("reservations.expired", {
+      tenantId: tenantId || null,
       count: result.count,
     });
   }
@@ -322,8 +483,10 @@ async function expirePendingReservations() {
 
 module.exports = {
   buildPendingPaymentWindow,
+  buildTenantFrontendReturnUrl,
   calculateDepositCents,
   createMercadoPagoPreference,
   expirePendingReservations,
+  getMercadoPagoWebhookSecret,
   processMercadoPagoWebhook,
 };

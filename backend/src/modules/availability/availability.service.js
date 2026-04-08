@@ -19,11 +19,16 @@ function validateBookingDate(normalizedDate, settings) {
   }
 }
 
-async function getAvailabilityContext(serviceId, date) {
-  await expirePendingReservations();
+async function getAvailabilityContext(tenantId, serviceId, date) {
+  await expirePendingReservations(tenantId);
 
   const normalizedDate = normalizeDate(date);
-  const service = await prisma.service.findUnique({ where: { id: Number(serviceId) } });
+  const service = await prisma.service.findFirst({
+    where: {
+      id: Number(serviceId),
+      tenantId,
+    },
+  });
 
   if (!service || !service.isActive) {
     throw new AppError("Servicio no disponible", 404);
@@ -31,16 +36,26 @@ async function getAvailabilityContext(serviceId, date) {
 
   const weekday = dayjs(normalizedDate).day();
   const [settings, rules, blockedDates, appointments] = await Promise.all([
-    prisma.businessSettings.findFirst(),
+    prisma.businessSettings.findFirst({
+      where: { tenantId },
+    }),
     prisma.availabilityRule.findMany({
-      where: { dayOfWeek: weekday, isActive: true },
+      where: {
+        tenantId,
+        dayOfWeek: weekday,
+        isActive: true,
+      },
       orderBy: { startTime: "asc" },
     }),
     prisma.blockedDate.findMany({
-      where: { date: new Date(normalizedDate) },
+      where: {
+        tenantId,
+        date: new Date(normalizedDate),
+      },
     }),
     prisma.appointment.findMany({
       where: {
+        tenantId,
         date: new Date(normalizedDate),
         status: { not: "CANCELED" },
       },
@@ -81,8 +96,8 @@ function isInsideWorkingPeriod(slotStart, slotEnd, workingPeriods, breakPeriods,
   return !collidesWithBlockedDate;
 }
 
-async function getAvailableSlots(serviceId, date) {
-  const context = await getAvailabilityContext(serviceId, date);
+async function getAvailableSlots(tenantId, serviceId, date) {
+  const context = await getAvailabilityContext(tenantId, serviceId, date);
   const workingPeriods = context.rules.filter((rule) => rule.type === "WORKING_HOURS");
   const breakPeriods = context.rules.filter((rule) => rule.type === "BREAK");
   const slotStep = 15;
@@ -138,36 +153,84 @@ async function getAvailableSlots(serviceId, date) {
   };
 }
 
-function listRules() {
-  return prisma.availabilityRule.findMany({ orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }] });
+async function getRuleOrThrow(tenantId, id) {
+  const rule = await prisma.availabilityRule.findFirst({
+    where: {
+      id: Number(id),
+      tenantId,
+    },
+  });
+
+  if (!rule) {
+    throw new AppError("Regla de disponibilidad no encontrada", 404);
+  }
+
+  return rule;
 }
 
-function createRule(data) {
-  return prisma.availabilityRule.create({ data });
+function listRules(tenantId) {
+  return prisma.availabilityRule.findMany({
+    where: { tenantId },
+    orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+  });
 }
 
-function updateRule(id, data) {
+function createRule(tenantId, data) {
+  return prisma.availabilityRule.create({
+    data: {
+      tenantId,
+      ...data,
+    },
+  });
+}
+
+async function updateRule(tenantId, id, data) {
+  await getRuleOrThrow(tenantId, id);
+
   return prisma.availabilityRule.update({ where: { id: Number(id) }, data });
 }
 
-function deleteRule(id) {
+async function deleteRule(tenantId, id) {
+  await getRuleOrThrow(tenantId, id);
+
   return prisma.availabilityRule.delete({ where: { id: Number(id) } });
 }
 
-function listBlockedDates() {
-  return prisma.blockedDate.findMany({ orderBy: { date: "asc" } });
+async function getBlockedDateOrThrow(tenantId, id) {
+  const blockedDate = await prisma.blockedDate.findFirst({
+    where: {
+      id: Number(id),
+      tenantId,
+    },
+  });
+
+  if (!blockedDate) {
+    throw new AppError("Bloqueo de fecha no encontrado", 404);
+  }
+
+  return blockedDate;
 }
 
-function createBlockedDate(data) {
+function listBlockedDates(tenantId) {
+  return prisma.blockedDate.findMany({
+    where: { tenantId },
+    orderBy: { date: "asc" },
+  });
+}
+
+function createBlockedDate(tenantId, data) {
   return prisma.blockedDate.create({
     data: {
+      tenantId,
       ...data,
       date: new Date(normalizeDate(data.date)),
     },
   });
 }
 
-function deleteBlockedDate(id) {
+async function deleteBlockedDate(tenantId, id) {
+  await getBlockedDateOrThrow(tenantId, id);
+
   return prisma.blockedDate.delete({ where: { id: Number(id) } });
 }
 

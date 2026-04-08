@@ -12,12 +12,19 @@ export function formatBookingPrice(priceCents: number | null | undefined): strin
   return formatter.format(priceCents);
 }
 
-export function calculateDepositCents(priceCents: number | null | undefined): number | null {
+export function calculateDepositCents(
+  priceCents: number | null | undefined,
+  depositPercentage = 50
+): number | null {
   if (!priceCents || priceCents <= 0) {
     return null;
   }
 
-  return Math.ceil(priceCents * 0.5);
+  if (!Number.isInteger(depositPercentage) || depositPercentage <= 0 || depositPercentage > 100) {
+    return null;
+  }
+
+  return Math.ceil(priceCents * (depositPercentage / 100));
 }
 
 export function calculateRemainingCents(

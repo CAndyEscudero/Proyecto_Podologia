@@ -1,24 +1,56 @@
 import { env } from "./env";
+import type { PublicBusinessSettings } from "../../shared/types/domain";
 
-interface SiteConfig {
+export interface SiteConfig {
   businessName: string;
-  location: string;
   address: string;
   phone: string;
+  contactEmail: string | null;
   whatsappNumber: string;
-  instagramUrl: string;
+  whatsappEnabled: boolean;
+  whatsappDefaultMessage: string;
+  instagramUrl: string | null;
   heroTitle: string;
   heroCopy: string;
 }
 
-export const siteConfig: SiteConfig = {
-  businessName: env.businessName,
-  location: "Venado Tuerto, Santa Fe",
-  address: "Av. Casey 123, Venado Tuerto",
-  phone: "+54 9 3462 000000",
+export const defaultSiteConfig: SiteConfig = {
+  businessName: env.businessName || "Agenda Online",
+  address: "Direccion a configurar",
+  phone: "Telefono a configurar",
+  contactEmail: null,
   whatsappNumber: env.whatsappNumber,
-  instagramUrl: "https://instagram.com/piessanosvt",
-  heroTitle: "Cuidamos tus pies con una experiencia profesional, clara y cercana",
+  whatsappEnabled: Boolean(env.whatsappNumber),
+  whatsappDefaultMessage: "Hola! Quiero consultar por un turno.",
+  instagramUrl: null,
+  heroTitle: "Reservas online claras, simples y listas para operar",
   heroCopy:
-    "Tratamientos de podologia y pedicuria con foco en salud, bienestar e imagen cuidada, ahora con reserva online y gestion profesional de turnos.",
+    "Una experiencia profesional para mostrar servicios, ordenar la agenda y facilitar el contacto con cada negocio.",
 };
+
+export const siteConfig = defaultSiteConfig;
+
+export function buildSiteConfig(publicSettings: PublicBusinessSettings | null): SiteConfig {
+  if (!publicSettings) {
+    return defaultSiteConfig;
+  }
+
+  const businessName = publicSettings.businessName || defaultSiteConfig.businessName;
+  const whatsappNumber = publicSettings.whatsAppNumber || defaultSiteConfig.whatsappNumber;
+  const whatsappEnabled = Boolean(publicSettings.whatsAppEnabled && whatsappNumber);
+
+  return {
+    ...defaultSiteConfig,
+    businessName,
+    address: publicSettings.address || defaultSiteConfig.address,
+    phone: publicSettings.phone || defaultSiteConfig.phone,
+    contactEmail: publicSettings.contactEmail || defaultSiteConfig.contactEmail,
+    whatsappNumber,
+    whatsappEnabled,
+    whatsappDefaultMessage:
+      publicSettings.whatsAppDefaultMessage || defaultSiteConfig.whatsappDefaultMessage,
+    heroTitle: `Reservas online para ${businessName}`,
+    heroCopy:
+      "Consulta servicios, elegi tu horario y contactate con el negocio desde una experiencia ordenada y profesional.",
+  };
+}

@@ -13,6 +13,25 @@ enum UserRole {
   STAFF
 }
 
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum TenantDomainType {
+  PLATFORM_SUBDOMAIN
+  CUSTOM_SUBDOMAIN
+  CUSTOM_ROOT
+}
+
+enum TenantDomainStatus {
+  PENDING
+  ACTIVE
+  FAILED
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -38,8 +57,51 @@ enum AvailabilityRuleType {
   BREAK
 }
 
+enum MercadoPagoConnectionStatus {
+  DISCONNECTED
+  PENDING
+  CONNECTED
+  ERROR
+}
+
+model Tenant {
+  id                Int                @id @default(autoincrement())
+  name              String
+  slug              String             @unique
+  businessType      String?
+  status            TenantStatus       @default(PENDING)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  domains           TenantDomain[]
+  users             User[]
+  clients           Client[]
+  services          Service[]
+  appointments      Appointment[]
+  availabilityRules AvailabilityRule[]
+  blockedDates      BlockedDate[]
+  businessSettings  BusinessSettings?
+  mercadoPagoConnection MercadoPagoConnection?
+}
+
+model TenantDomain {
+  id         Int                @id @default(autoincrement())
+  tenantId   Int
+  hostname   String             @unique
+  isPrimary  Boolean            @default(false)
+  type       TenantDomainType   @default(PLATFORM_SUBDOMAIN)
+  status     TenantDomainStatus @default(PENDING)
+  verifiedAt DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  tenant     Tenant             @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, isPrimary])
+}
+
 model User {
   id           Int       @id @default(autoincrement())
+  tenantId     Int
   fullName     String
   email        String    @unique
   passwordHash String
@@ -47,35 +109,52 @@ model User {
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, role])
 }
 
 model Client {
   id           Int           @id @default(autoincrement())
+  tenantId     Int
   firstName    String
   lastName     String
   phone        String
-  email        String?       @unique
+  email        String?
   notes        String?       @db.Text
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
   appointments Appointment[]
+
+  @@unique([tenantId, email])
+  @@unique([id, tenantId])
+  @@index([tenantId, phone])
 }
 
 model Service {
   id           Int           @id @default(autoincrement())
+  tenantId     Int
   name         String
-  slug         String        @unique
+  slug         String
   description  String        @db.Text
   durationMin  Int
   priceCents   Int?
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
   appointments Appointment[]
+
+  @@unique([tenantId, slug])
+  @@unique([id, tenantId])
+  @@index([tenantId, isActive])
 }
 
 model Appointment {
   id                  Int               @id @default(autoincrement())
+  tenantId            Int
   clientId            Int
   serviceId           Int
   date                DateTime          @db.Date
@@ -85,25 +164,38 @@ model Appointment {
   paymentStatus       PaymentStatus     @default(PENDING)
   paymentOption       PaymentOption     @default(DEPOSIT)
   paymentProvider     String?
-  paymentReference    String?           @unique
-  paymentPreferenceId String?           @unique
+  paymentReference    String?
+  paymentPreferenceId String?
   paymentApprovedAt   DateTime?
   paymentExpiresAt    DateTime?
+  reminderDueAt       DateTime?
+  reminderSentAt      DateTime?
+  reminderProcessedAt DateTime?
+  reminderLastAttemptAt DateTime?
+  reminderSendAttempts Int              @default(0)
+  reminderLastError   String?           @db.Text
   priceCents          Int?
   depositCents        Int?
   notes               String?           @db.Text
   source              String            @default("web")
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
-  client              Client            @relation(fields: [clientId], references: [id])
-  service             Service           @relation(fields: [serviceId], references: [id])
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
+  client              Client            @relation(fields: [clientId, tenantId], references: [id, tenantId])
+  service             Service           @relation(fields: [serviceId, tenantId], references: [id, tenantId])
 
-  @@index([date, startTime])
-  @@index([paymentStatus, paymentExpiresAt])
+  @@unique([tenantId, paymentReference])
+  @@unique([tenantId, paymentPreferenceId])
+  @@index([tenantId, date, startTime])
+  @@index([tenantId, paymentStatus, paymentExpiresAt])
+ @@index([tenantId, status, reminderProcessedAt, reminderDueAt], map: "appt_reminder_idx")
+  @@index([tenantId, clientId])
+  @@index([tenantId, serviceId])
 }
 
 model AvailabilityRule {
   id          Int                  @id @default(autoincrement())
+  tenantId    Int
   dayOfWeek   Int
   type        AvailabilityRuleType @default(WORKING_HOURS)
   startTime   String
@@ -111,26 +203,69 @@ model AvailabilityRule {
   isActive    Boolean              @default(true)
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, dayOfWeek, isActive])
 }
 
 model BlockedDate {
   id          Int      @id @default(autoincrement())
+  tenantId    Int
   date        DateTime @db.Date
   startTime   String?
   endTime     String?
   reason      String?
   createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, date])
 }
 
 model BusinessSettings {
-  id                   Int      @id @default(autoincrement())
-  businessName         String
-  contactEmail         String?
-  phone                String?
-  address              String?
-  appointmentGapMin    Int      @default(0)
-  bookingWindowDays    Int      @default(45)
-  timezone             String   @default("America/Argentina/Buenos_Aires")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                       Int      @id @default(autoincrement())
+  tenantId                 Int      @unique
+  businessName             String
+  contactEmail             String?
+  phone                    String?
+  address                  String?
+  appointmentGapMin        Int      @default(0)
+  bookingWindowDays        Int      @default(45)
+  depositPercentage        Int      @default(50)
+  mercadoPagoEnabled       Boolean  @default(false)
+  mercadoPagoPublicKey     String?
+  mercadoPagoAccessToken   String?  @db.Text
+  mercadoPagoWebhookSecret String?  @db.Text
+  transactionalEmailEnabled Boolean @default(false)
+  transactionalEmailFromName String?
+  transactionalEmailReplyTo String?
+  whatsAppEnabled          Boolean  @default(false)
+  whatsAppNumber           String?
+  whatsAppDefaultMessage   String?  @db.Text
+  timezone                 String   @default("America/Argentina/Buenos_Aires")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  tenant                   Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model MercadoPagoConnection {
+  id                Int                        @id @default(autoincrement())
+  tenantId          Int                        @unique
+  status            MercadoPagoConnectionStatus @default(DISCONNECTED)
+  mercadoPagoUserId String?
+  collectorId       String?
+  publicKey         String?
+  accessToken       String?                    @db.Text
+  refreshToken      String?                    @db.Text
+  tokenType         String?
+  scope             String?
+  liveMode          Boolean                    @default(false)
+  connectedAt       DateTime?
+  expiresAt         DateTime?
+  lastRefreshedAt   DateTime?
+  lastWebhookAt     DateTime?
+  lastWebhookStatus String?
+  lastError         String?                    @db.Text
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  tenant            Tenant                     @relation(fields: [tenantId], references: [id])
 }

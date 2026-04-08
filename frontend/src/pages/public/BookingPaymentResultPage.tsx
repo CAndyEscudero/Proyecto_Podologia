@@ -13,9 +13,9 @@ import {
 import toast from "react-hot-toast";
 import { SectionHeading } from "../../shared/ui/section-heading/SectionHeading";
 import { Button } from "../../shared/ui/button/Button";
-import { siteConfig } from "../../app/config/site-config";
 import { formatBookingPrice } from "../../features/booking/utils/booking-formatters";
 import type { BookingPaymentStatusCopy } from "../../features/booking/types/booking.types";
+import { usePublicTenant } from "../../features/public/tenant/PublicTenantProvider";
 
 const BOOKING_RECEIPT_STORAGE_KEY = "booking_receipt_snapshot";
 
@@ -178,6 +178,7 @@ function buildSimplePdf(lines: Array<{ text: string; x: number; y: number; size?
 }
 
 export function BookingPaymentResultPage() {
+  const { siteConfig } = usePublicTenant();
   const [searchParams] = useSearchParams();
   const status = resolvePaymentStatus(searchParams);
   const copy = useMemo(() => statusMap[status] || statusMap.pending, [status]);
@@ -231,6 +232,7 @@ export function BookingPaymentResultPage() {
     `Estado del pago: ${formatMercadoPagoStatus(paymentStatus)}`,
     receiptSnapshot?.appointment.notes ? `Observaciones: ${receiptSnapshot.appointment.notes}` : null,
     `Contacto: ${siteConfig.phone}`,
+    siteConfig.contactEmail ? `Email de contacto: ${siteConfig.contactEmail}` : null,
     `Direccion: ${siteConfig.address}`,
   ].filter(Boolean);
 
@@ -288,6 +290,7 @@ export function BookingPaymentResultPage() {
       { text: "Datos del centro", x: 48, y: 356, size: 12, bold: true },
       { text: `Direccion: ${siteConfig.address}`, x: 48, y: 336, size: 11 },
       { text: `Telefono: ${siteConfig.phone}`, x: 48, y: 318, size: 11 },
+      { text: `Email: ${siteConfig.contactEmail || "No informado"}`, x: 48, y: 300, size: 11 },
     ];
 
     const file = buildSimplePdf(pdfLines);
@@ -364,6 +367,11 @@ export function BookingPaymentResultPage() {
                   <p>
                     Contacto: <span className="font-semibold text-brand-ink">{siteConfig.phone}</span>
                   </p>
+                  {siteConfig.contactEmail ? (
+                    <p>
+                      Email: <span className="font-semibold text-brand-ink">{siteConfig.contactEmail}</span>
+                    </p>
+                  ) : null}
                   <p>
                     Direccion: <span className="font-semibold text-brand-ink">{siteConfig.address}</span>
                   </p>

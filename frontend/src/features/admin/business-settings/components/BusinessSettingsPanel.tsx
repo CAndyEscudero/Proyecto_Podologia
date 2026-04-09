@@ -171,64 +171,65 @@ export function BusinessSettingsPanel({
 
   return (
     <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-      <div className="card-surface overflow-hidden">
-        <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
-                  <Settings2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
-                    Identidad, agenda, cobros y canales
-                  </p>
-                  <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Configuracion del negocio</h2>
+      <div className="space-y-6">
+        <div className="card-surface overflow-hidden">
+          <div className="border-b border-rose-100/80 bg-gradient-to-r from-white via-rose-50/60 to-white px-6 py-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-brand-wine shadow-sm">
+                    <Settings2 className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-wine/80">
+                      Identidad, agenda, cobros y canales
+                    </p>
+                    <h2 className="mt-1 text-2xl font-semibold text-brand-ink">Configuracion del negocio</h2>
+                  </div>
                 </div>
+                <p className="mt-4 text-sm leading-6 text-slate-600">
+                  Ajusta lo que ve el paciente, la logica de reservas y las integraciones del tenant
+                  sin exponer secretos en el panel.
+                </p>
               </div>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Ajusta lo que ve el paciente, la logica de reservas y las integraciones del tenant
-                sin exponer secretos en el panel.
-              </p>
-            </div>
 
-            <div className="grid min-w-[260px] gap-3 rounded-[1.5rem] border border-rose-100 bg-white/85 p-4 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)] sm:grid-cols-5">
-              <MetricPill label="Ventana" value={`${preview.bookingWindowDays || 45} dias`} icon={<Clock3 className="h-4 w-4" />} />
-              <MetricPill label="Gap" value={`${preview.appointmentGapMin || 0} min`} icon={<Clock3 className="h-4 w-4" />} />
-              <MetricPill label="Sena" value={`${preview.depositPercentage || 50}%`} icon={<BadgePercent className="h-4 w-4" />} />
-              <MetricPill label="Emails" value={preview.transactionalEmailEnabled ? "On" : "Off"} icon={<Send className="h-4 w-4" />} />
-              <MetricPill label="WhatsApp" value={preview.whatsAppEnabled ? "On" : "Off"} icon={<MessageCircle className="h-4 w-4" />} />
+              <div className="grid min-w-[260px] gap-3 rounded-[1.5rem] border border-rose-100 bg-white/85 p-4 shadow-[0_18px_45px_-36px_rgba(148,70,88,0.5)] sm:grid-cols-5">
+                <MetricPill label="Ventana" value={`${preview.bookingWindowDays || 45} dias`} icon={<Clock3 className="h-4 w-4" />} />
+                <MetricPill label="Gap" value={`${preview.appointmentGapMin || 0} min`} icon={<Clock3 className="h-4 w-4" />} />
+                <MetricPill label="Sena" value={`${preview.depositPercentage || 50}%`} icon={<BadgePercent className="h-4 w-4" />} />
+                <MetricPill label="Emails" value={preview.transactionalEmailEnabled ? "On" : "Off"} icon={<Send className="h-4 w-4" />} />
+                <MetricPill label="WhatsApp" value={preview.whatsAppEnabled ? "On" : "Off"} icon={<MessageCircle className="h-4 w-4" />} />
+              </div>
             </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Nombre comercial" error={errors.businessName?.message}>
-              <input type="text" {...register("businessName")} className="field-input" />
-            </Field>
-            <Field label="Email de contacto" error={errors.contactEmail?.message}>
-              <input type="email" {...register("contactEmail")} className="field-input" />
-            </Field>
-            <Field label="Telefono" error={errors.phone?.message}>
-              <input type="text" {...register("phone")} className="field-input" />
-            </Field>
-            <Field label="Direccion" error={errors.address?.message}>
-              <input type="text" {...register("address")} className="field-input" />
-            </Field>
-            <Field label="Ventana de reserva" error={errors.bookingWindowDays?.message}>
-              <input type="number" min="1" max="365" {...register("bookingWindowDays")} className="field-input" />
-            </Field>
-            <Field label="Separacion entre turnos" error={errors.appointmentGapMin?.message}>
-              <input type="number" min="0" max="120" {...register("appointmentGapMin")} className="field-input" />
-            </Field>
-            <Field label="Porcentaje de sena" error={errors.depositPercentage?.message}>
-              <input type="number" min="1" max="100" {...register("depositPercentage")} className="field-input" />
-            </Field>
-            <Field label="Timezone" error={errors.timezone?.message}>
-              <input type="text" {...register("timezone")} className="field-input" />
-            </Field>
-          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 p-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nombre comercial" error={errors.businessName?.message}>
+                <input type="text" {...register("businessName")} className="field-input" />
+              </Field>
+              <Field label="Email de contacto" error={errors.contactEmail?.message}>
+                <input type="email" {...register("contactEmail")} className="field-input" />
+              </Field>
+              <Field label="Telefono" error={errors.phone?.message}>
+                <input type="text" {...register("phone")} className="field-input" />
+              </Field>
+              <Field label="Direccion" error={errors.address?.message}>
+                <input type="text" {...register("address")} className="field-input" />
+              </Field>
+              <Field label="Ventana de reserva" error={errors.bookingWindowDays?.message}>
+                <input type="number" min="1" max="365" {...register("bookingWindowDays")} className="field-input" />
+              </Field>
+              <Field label="Separacion entre turnos" error={errors.appointmentGapMin?.message}>
+                <input type="number" min="0" max="120" {...register("appointmentGapMin")} className="field-input" />
+              </Field>
+              <Field label="Porcentaje de sena" error={errors.depositPercentage?.message}>
+                <input type="number" min="1" max="100" {...register("depositPercentage")} className="field-input" />
+              </Field>
+              <Field label="Timezone" error={errors.timezone?.message}>
+                <input type="text" {...register("timezone")} className="field-input" />
+              </Field>
+            </div>
 
           <section className="rounded-[1.6rem] border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,241,243,0.92))] p-5 shadow-[0_24px_60px_-48px_rgba(148,70,88,0.45)]">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -404,8 +405,6 @@ export function BusinessSettingsPanel({
             </div>
           </section>
 
-          <TenantDomainsPanel />
-
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border border-rose-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,241,243,0.92))] px-4 py-4 shadow-[0_24px_60px_-48px_rgba(148,70,88,0.45)]">
             <div className="text-sm text-slate-600">
               <p className="font-semibold text-brand-ink">Impacto inmediato</p>
@@ -417,7 +416,10 @@ export function BusinessSettingsPanel({
               {isSaving ? "Guardando..." : "Guardar configuracion"}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
+
+        <TenantDomainsPanel />
       </div>
 
       <div className="space-y-6">

@@ -22,7 +22,6 @@ import type {
   AppointmentsTableProps,
   AppointmentTableView,
 } from "../types/appointments.types";
-import { formatBookingPrice } from "../../../booking/utils/booking-formatters";
 
 const statusOptions: ReadonlyArray<{ label: string; value: AppointmentStatus }> = [
   { label: "Pendiente", value: "PENDING" },
@@ -36,14 +35,6 @@ const statusStyles: Record<AppointmentStatus, string> = {
   CONFIRMED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   CANCELED: "border-rose-200 bg-rose-50 text-rose-700",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
-};
-
-const paymentStatusStyles: Record<Appointment["paymentStatus"], string> = {
-  PENDING: "border-amber-200 bg-amber-50 text-amber-700",
-  APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  REJECTED: "border-rose-200 bg-rose-50 text-rose-700",
-  EXPIRED: "border-slate-200 bg-slate-100 text-slate-700",
-  CANCELLED: "border-slate-200 bg-slate-100 text-slate-700",
 };
 
 const agendaBlocks = [
@@ -115,7 +106,6 @@ export function AppointmentsTable({
       confirmed: appointments.filter((appointment) => appointment.status === "CONFIRMED").length,
       completed: appointments.filter((appointment) => appointment.status === "COMPLETED").length,
       canceled: appointments.filter((appointment) => appointment.status === "CANCELED").length,
-      pendingPayments: appointments.filter((appointment) => appointment.paymentStatus === "PENDING").length,
     }),
     [appointments]
   );
@@ -174,14 +164,14 @@ export function AppointmentsTable({
   );
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,246,246,0.96))] shadow-[0_32px_60px_-42px_rgba(90,64,74,0.36)]">
+    <div className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_24px_52px_-38px_rgba(90,64,74,0.22)]">
       <div className="border-b border-slate-200/80 px-5 py-5 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-brand-wine">
               Gestion diaria
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-brand-ink">Agenda de turnos</h3>
+            <h3 className="mt-2 text-[1.7rem] font-semibold text-brand-ink">Agenda de turnos</h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Una vista enfocada en filtrar rapido, detectar prioridades y actuar sin saturacion visual.
             </p>
@@ -215,7 +205,15 @@ export function AppointmentsTable({
       </div>
 
       <div className="border-b border-slate-200/80 bg-white px-5 py-5 md:px-6">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <SummaryPill label="Turnos en vista" value={summary.total} tone="text-brand-ink" />
+          <SummaryPill label="Pendientes" value={summary.pending} tone="text-amber-700" />
+          <SummaryPill label="Confirmados" value={summary.confirmed} tone="text-emerald-700" />
+          <SummaryPill label="Realizados" value={summary.completed} tone="text-slate-700" />
+          <SummaryPill label="Cancelados" value={summary.canceled} tone="text-rose-700" />
+        </div>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <label className="block">
               <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -338,19 +336,19 @@ export function AppointmentsTable({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
-          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 px-4 py-4">
+        <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(240px,300px)]">
+          <div className="rounded-[1rem] border border-slate-200 bg-slate-50/70 px-4 py-3.5">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-brand-wine shadow-sm">
-                <CalendarDays size={18} />
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-white text-brand-wine">
+                <CalendarDays size={17} />
               </span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Rango activo</p>
-                <p className="mt-2 text-sm font-semibold text-brand-ink">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Rango activo</p>
+                <p className="mt-1.5 text-sm font-semibold text-brand-ink">
                   {filters.dateFrom ? dayjs(filters.dateFrom).format("DD/MM/YYYY") : "Sin inicio"} -{" "}
                   {filters.dateTo ? dayjs(filters.dateTo).format("DD/MM/YYYY") : "Sin fin"}
                 </p>
-                <p className="mt-2 text-xs leading-5 text-slate-500">
+                <p className="mt-1.5 text-xs leading-5 text-slate-500">
                   {filters.serviceId ? "Filtrado por servicio especifico." : "Incluye todos los servicios activos."}{" "}
                   {filters.status ? `Estado: ${translateStatus(filters.status)}.` : "Sin restriccion por estado."}
                 </p>
@@ -358,21 +356,21 @@ export function AppointmentsTable({
             </div>
           </div>
 
-          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 px-4 py-4">
+          <div className="rounded-[1rem] border border-slate-200 bg-slate-50/70 px-4 py-3.5">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-brand-wine shadow-sm">
-                <WandSparkles size={18} />
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-white text-brand-wine">
+                <WandSparkles size={17} />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   Servicios con mas movimiento
                 </p>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                <div className="mt-2.5 space-y-1.5 text-sm text-slate-600">
                   {serviceSummary.length ? (
                     serviceSummary.map(([serviceName, count]) => (
                       <div key={serviceName} className="flex items-center justify-between gap-3">
                         <span className="truncate font-medium text-brand-ink">{serviceName}</span>
-                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-brand-wine">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-brand-wine">
                           {count} turnos
                         </span>
                       </div>
@@ -385,15 +383,6 @@ export function AppointmentsTable({
             </div>
           </div>
         </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <SummaryPill label="Turnos en vista" value={summary.total} tone="text-brand-ink" />
-          <SummaryPill label="Pendientes" value={summary.pending} tone="text-amber-700" />
-          <SummaryPill label="Confirmados" value={summary.confirmed} tone="text-emerald-700" />
-          <SummaryPill label="Realizados" value={summary.completed} tone="text-slate-700" />
-          <SummaryPill label="Cancelados" value={summary.canceled} tone="text-rose-700" />
-          <SummaryPill label="Pagos pendientes" value={summary.pendingPayments} tone="text-amber-700" />
-        </div>
       </div>
 
       {isLoading ? (
@@ -401,11 +390,11 @@ export function AppointmentsTable({
       ) : appointments.length === 0 ? (
         <div className="px-6 py-10 text-sm text-slate-500">No hay turnos para los filtros seleccionados.</div>
       ) : view === "timeline" ? (
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-3">
+        <div className="grid gap-4 p-4 md:p-6 xl:grid-cols-3">
           {groupedAppointments.map((block) => (
             <section
               key={block.id}
-              className="rounded-[1.7rem] border border-slate-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(90,64,74,0.34)]"
+              className="rounded-[1.45rem] border border-slate-200/80 bg-white p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -426,9 +415,9 @@ export function AppointmentsTable({
                     <article
                       key={appointment.id}
                       className={clsx(
-                        "rounded-[1.4rem] border px-4 py-4 transition",
+                        "rounded-[1.2rem] border px-4 py-4 transition",
                         selectedAppointmentId === appointment.id
-                          ? "border-brand-rose bg-rose-50/60 shadow-[0_18px_34px_-28px_rgba(148,100,114,0.58)]"
+                          ? "border-brand-rose bg-rose-50/60"
                           : "border-slate-200/80 bg-white"
                       )}
                     >
@@ -448,29 +437,6 @@ export function AppointmentsTable({
                       <div className="mt-3 grid gap-1 text-xs text-slate-500">
                         <p>{appointment.client.phone}</p>
                         <p className="truncate">{appointment.client.email || "Sin email"}</p>
-                      </div>
-
-                      <div className="mt-4 space-y-2 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/70 px-3 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                            Pago
-                          </span>
-                          <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
-                        </div>
-                        <div className="grid gap-1 text-xs text-slate-500">
-                          <p>
-                            <strong className="font-semibold text-slate-700">Total:</strong>{" "}
-                            {formatBookingPrice(appointment.priceCents)}
-                          </p>
-                          <p>
-                            <strong className="font-semibold text-slate-700">Sena:</strong>{" "}
-                            {formatBookingPrice(appointment.depositCents)}
-                          </p>
-                          <p>
-                            <strong className="font-semibold text-slate-700">Referencia:</strong>{" "}
-                            {appointment.paymentReference || "Sin referencia"}
-                          </p>
-                        </div>
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -541,7 +507,7 @@ export function AppointmentsTable({
                 <tr
                   key={appointment.id}
                   className={clsx(
-                    "overflow-hidden rounded-[1.5rem] bg-white shadow-[0_16px_40px_-34px_rgba(90,64,74,0.34)]",
+                    "overflow-hidden rounded-[1.3rem] bg-white shadow-[0_14px_30px_-24px_rgba(90,64,74,0.2)]",
                     selectedAppointmentId === appointment.id && "ring-2 ring-rose-200"
                   )}
                 >
@@ -570,26 +536,7 @@ export function AppointmentsTable({
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="min-w-[240px] space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <StatusBadge status={appointment.status} />
-                        <PaymentStatusBadge paymentStatus={appointment.paymentStatus} />
-                      </div>
-                      <div className="rounded-[1rem] border border-slate-200/80 bg-slate-50/80 px-3 py-3 text-xs text-slate-500">
-                        <p>
-                          <span className="font-semibold text-slate-700">Total:</span>{" "}
-                          {formatBookingPrice(appointment.priceCents)}
-                        </p>
-                        <p className="mt-1">
-                          <span className="font-semibold text-slate-700">Sena:</span>{" "}
-                          {formatBookingPrice(appointment.depositCents)}
-                        </p>
-                        <p className="mt-1">
-                          <span className="font-semibold text-slate-700">Referencia:</span>{" "}
-                          {appointment.paymentReference || "Sin referencia"}
-                        </p>
-                      </div>
-                    </div>
+                    <StatusBadge status={appointment.status} />
                   </td>
                   <td className="px-4 py-4">
                     <StatusQuickActions
@@ -626,9 +573,9 @@ export function AppointmentsTable({
 
 function SummaryPill({ label, value, tone }: SummaryPillProps) {
   return (
-    <div className="rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <p className={clsx("mt-3 font-sans text-[1.7rem] font-semibold leading-none tracking-tight tabular-nums", tone)}>
+    <div className="flex items-center justify-between gap-3 rounded-[1rem] border border-slate-200 bg-slate-50/70 px-3.5 py-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className={clsx("font-sans text-[1.35rem] font-semibold leading-none tracking-tight tabular-nums", tone)}>
         {String(value).padStart(2, "0")}
       </p>
     </div>
@@ -644,19 +591,6 @@ function StatusBadge({ status }: { status: AppointmentStatus }) {
       )}
     >
       {translateStatus(status)}
-    </span>
-  );
-}
-
-function PaymentStatusBadge({ paymentStatus }: { paymentStatus: Appointment["paymentStatus"] }) {
-  return (
-    <span
-      className={clsx(
-        "inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide",
-        paymentStatusStyles[paymentStatus]
-      )}
-    >
-      {translatePaymentStatus(paymentStatus)}
     </span>
   );
 }
@@ -777,16 +711,4 @@ function translateStatus(status: AppointmentStatus) {
   };
 
   return labels[status];
-}
-
-function translatePaymentStatus(paymentStatus: Appointment["paymentStatus"]) {
-  const labels: Record<Appointment["paymentStatus"], string> = {
-    PENDING: "Pago pendiente",
-    APPROVED: "Pago aprobado",
-    REJECTED: "Pago rechazado",
-    EXPIRED: "Pago vencido",
-    CANCELLED: "Pago cancelado",
-  };
-
-  return labels[paymentStatus];
 }

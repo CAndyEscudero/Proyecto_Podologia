@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, CalendarClock, ChartColumn, GripVertical, UsersRound } from "lucide-react";
 import type { AdminSummaryItem } from "../types/appointments.types";
-import { buildTenantStorageKey } from "../../../../shared/utils/tenant-storage";
 
 interface AdminSummaryProps {
   items: AdminSummaryItem[];
@@ -24,9 +23,7 @@ export function AdminSummary({ items }: AdminSummaryProps) {
       return;
     }
 
-    window.localStorage.removeItem(STORAGE_KEY);
-
-    const savedLabels = window.localStorage.getItem(buildTenantStorageKey(STORAGE_KEY));
+    const savedLabels = window.localStorage.getItem(STORAGE_KEY);
     if (!savedLabels) {
       setOrderedLabels(visibleItems.map((item) => item.label));
       return;
@@ -50,7 +47,7 @@ export function AdminSummary({ items }: AdminSummaryProps) {
       return;
     }
 
-    window.localStorage.setItem(buildTenantStorageKey(STORAGE_KEY), JSON.stringify(orderedLabels));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(orderedLabels));
   }, [orderedLabels]);
 
   const orderedItems = orderedLabels
@@ -78,7 +75,7 @@ export function AdminSummary({ items }: AdminSummaryProps) {
   }
 
   return (
-    <section className="grid auto-rows-fr gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+    <section className="grid auto-rows-fr gap-2 md:grid-cols-2 2xl:grid-cols-4">
       {orderedItems.map(({ item, index }) => {
         const Icon = summaryIcons[index] || Activity;
         const isDragging = draggedLabel === item.label;
@@ -98,20 +95,20 @@ export function AdminSummary({ items }: AdminSummaryProps) {
               }
               setDraggedLabel(null);
             }}
-            className={`flex min-h-[128px] min-w-0 flex-col justify-between rounded-[1.7rem] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_16px_40px_-28px_rgba(148,100,114,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_50px_-30px_rgba(148,100,114,0.42)] md:px-5 ${
+            className={`flex min-h-[90px] min-w-0 flex-col justify-between rounded-[1.05rem] border border-slate-200/80 bg-white px-3.5 py-3 shadow-[0_10px_22px_-20px_rgba(148,100,114,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_24px_-22px_rgba(148,100,114,0.24)] md:min-h-[96px] md:px-3.5 ${
               isDragging ? "scale-[0.985] opacity-70" : ""
             }`}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-2.5">
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
                   {item.label}
                 </p>
-                <p className="mt-4 font-sans text-[2rem] font-semibold leading-none tracking-tight tabular-nums text-brand-ink">
+                <p className="mt-1.5 font-sans text-[1.55rem] font-semibold leading-none tracking-tight tabular-nums text-brand-ink md:text-[1.65rem]">
                   {item.value}
                 </p>
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-1.5">
                 <button
                   type="button"
                   draggable
@@ -122,21 +119,21 @@ export function AdminSummary({ items }: AdminSummaryProps) {
                     setDraggedLabel(item.label);
                   }}
                   onDragEnd={() => setDraggedLabel(null)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-brand-wine"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-[0.8rem] border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-brand-wine"
                 >
-                  <GripVertical size={16} />
+                  <GripVertical size={14} />
                 </button>
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-brand-wine">
-                  <Icon size={18} />
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] bg-rose-50 text-brand-wine md:h-9 md:w-9">
+                  <Icon size={16} />
                 </span>
               </div>
             </div>
             {item.copy ? (
-              <p className="mt-4 min-h-[2.8rem] max-w-[24ch] text-sm leading-6 text-slate-500">
+              <p className="mt-1.5 min-h-[2rem] max-w-[20ch] text-[0.9rem] leading-5 text-slate-500">
                 {item.copy}
               </p>
             ) : (
-              <div className="mt-4 min-h-[2.8rem]" />
+              <div className="mt-1.5 min-h-[2rem]" />
             )}
           </article>
         );

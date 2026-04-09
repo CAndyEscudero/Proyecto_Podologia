@@ -60,7 +60,7 @@ import { clearStoredToken } from "../../shared/utils/auth";
 export function AdminDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
@@ -92,6 +92,13 @@ export function AdminDashboardPage() {
   const [isSavingBusinessSettings, setIsSavingBusinessSettings] = useState(false);
   const [isConnectingMercadoPago, setIsConnectingMercadoPago] = useState(false);
   const [isDisconnectingMercadoPago, setIsDisconnectingMercadoPago] = useState(false);
+  const [tenantHost, setTenantHost] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setTenantHost(window.location.host);
+    }
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -562,6 +569,11 @@ export function AdminDashboardPage() {
     }
   }
 
+  function handleLogout() {
+    clearStoredToken();
+    window.location.href = "/admin/login";
+  }
+
   return (
     <div className="space-y-5 lg:space-y-6">
       {isSidebarOpen ? (
@@ -577,6 +589,10 @@ export function AdminDashboardPage() {
         items={navigationItems}
         activeTab={activeTab}
         onChange={handleSidebarChange}
+        userName={user?.fullName}
+        businessName={businessSettings?.businessName || user?.email}
+        tenantHost={tenantHost}
+        onLogout={handleLogout}
         showCloseButton
         onClose={() => setIsSidebarOpen(false)}
         className={`fixed inset-y-0 left-0 z-50 w-[290px] max-w-[85vw] overflow-y-auto bg-[#fcf8f8] p-4 transition-transform duration-300 lg:hidden ${
@@ -589,6 +605,10 @@ export function AdminDashboardPage() {
           items={navigationItems}
           activeTab={activeTab}
           onChange={handleSidebarChange}
+          userName={user?.fullName}
+          businessName={businessSettings?.businessName || user?.email}
+          tenantHost={tenantHost}
+          onLogout={handleLogout}
           className="hidden lg:block lg:sticky lg:top-6"
         />
 
@@ -654,6 +674,41 @@ export function AdminDashboardPage() {
             </div>
           ) : null}
 
+          {activeTab === "appointmentCreate" || activeTab === "appointmentManage" ? (
+            <div className="rounded-[1.3rem] border border-slate-200 bg-white p-1.5 shadow-[0_18px_32px_-28px_rgba(90,64,74,0.18)]">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("appointmentCreate");
+                    setAppointmentMode("create");
+                  }}
+                  className={`inline-flex min-h-11 items-center rounded-[1rem] px-4 text-sm font-semibold transition ${
+                    activeTab === "appointmentCreate"
+                      ? "bg-brand-wine text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-brand-ink"
+                  }`}
+                >
+                  Alta manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("appointmentManage");
+                    setAppointmentMode(selectedAppointment ? appointmentMode : "edit");
+                  }}
+                  className={`inline-flex min-h-11 items-center rounded-[1rem] px-4 text-sm font-semibold transition ${
+                    activeTab === "appointmentManage"
+                      ? "bg-brand-wine text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-brand-ink"
+                  }`}
+                >
+                  Gestion de turnos
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {activeTab === "appointmentCreate" ? (
             <AppointmentsManager
               services={services}
@@ -709,53 +764,51 @@ export function AdminDashboardPage() {
             </div>
           ) : null}
 
-          {(activeTab === "services" || activeTab === "availability" || activeTab === "business") ? (
+          {activeTab === "services" ? (
+            <ServicesManager
+              services={services}
+              onCreate={handleCreateService}
+              onUpdate={handleUpdateService}
+              onDelete={handleDeleteService}
+              isSaving={isSavingService}
+              isDeletingId={isDeletingServiceId}
+              editingService={editingService}
+              onEdit={setEditingService}
+              onCancelEdit={() => setEditingService(null)}
+            />
+          ) : null}
+
+          {activeTab === "availability" ? (
+            <AvailabilityManager
+              rules={rules}
+              blockedDates={blockedDates}
+              onCreateRule={handleCreateRule}
+              onUpdateRule={handleUpdateRule}
+              onDeleteRule={handleDeleteRule}
+              onCreateBlockedDate={handleCreateBlockedDate}
+              onDeleteBlockedDate={handleDeleteBlockedDate}
+              isSavingRule={isSavingRule}
+              isDeletingRuleId={isDeletingRuleId}
+              isSavingBlockedDate={isSavingBlockedDate}
+              isDeletingBlockedDateId={isDeletingBlockedDateId}
+              editingRule={editingRule}
+              onEditRule={setEditingRule}
+              onCancelEditRule={() => setEditingRule(null)}
+            />
+          ) : null}
+
+          {activeTab === "business" ? (
             <div className="min-w-0 rounded-[2rem] border border-rose-100/80 bg-white/82 p-3 shadow-soft backdrop-blur md:p-4">
               <div className="min-w-0 rounded-[1.7rem] border border-white/75 bg-gradient-to-br from-white via-white to-rose-50/45 px-4 py-5 md:px-5 md:py-6">
-                {activeTab === "services" ? (
-                  <ServicesManager
-                    services={services}
-                    onCreate={handleCreateService}
-                    onUpdate={handleUpdateService}
-                    onDelete={handleDeleteService}
-                    isSaving={isSavingService}
-                    isDeletingId={isDeletingServiceId}
-                    editingService={editingService}
-                    onEdit={setEditingService}
-                    onCancelEdit={() => setEditingService(null)}
-                  />
-                ) : null}
-
-                {activeTab === "availability" ? (
-                  <AvailabilityManager
-                    rules={rules}
-                    blockedDates={blockedDates}
-                    onCreateRule={handleCreateRule}
-                    onUpdateRule={handleUpdateRule}
-                    onDeleteRule={handleDeleteRule}
-                    onCreateBlockedDate={handleCreateBlockedDate}
-                    onDeleteBlockedDate={handleDeleteBlockedDate}
-                    isSavingRule={isSavingRule}
-                    isDeletingRuleId={isDeletingRuleId}
-                    isSavingBlockedDate={isSavingBlockedDate}
-                    isDeletingBlockedDateId={isDeletingBlockedDateId}
-                    editingRule={editingRule}
-                    onEditRule={setEditingRule}
-                    onCancelEditRule={() => setEditingRule(null)}
-                  />
-                ) : null}
-
-                {activeTab === "business" ? (
-                  <BusinessSettingsPanel
-                    settings={businessSettings}
-                    onSave={handleUpdateBusinessSettings}
-                    onConnectMercadoPago={handleConnectMercadoPago}
-                    onDisconnectMercadoPago={handleDisconnectMercadoPago}
-                    isSaving={isSavingBusinessSettings}
-                    isConnectingMercadoPago={isConnectingMercadoPago}
-                    isDisconnectingMercadoPago={isDisconnectingMercadoPago}
-                  />
-                ) : null}
+                <BusinessSettingsPanel
+                  settings={businessSettings}
+                  onSave={handleUpdateBusinessSettings}
+                  onConnectMercadoPago={handleConnectMercadoPago}
+                  onDisconnectMercadoPago={handleDisconnectMercadoPago}
+                  isSaving={isSavingBusinessSettings}
+                  isConnectingMercadoPago={isConnectingMercadoPago}
+                  isDisconnectingMercadoPago={isDisconnectingMercadoPago}
+                />
               </div>
             </div>
           ) : null}

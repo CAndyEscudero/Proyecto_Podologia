@@ -11,6 +11,37 @@ function buildAllowedOrigins(env) {
   ]);
 }
 
+function normalizeHostname(value) {
+  return String(value || "").trim().toLowerCase().replace(/\.$/, "");
+}
+
+function isPlatformOrigin(origin, platformApexDomain) {
+  if (!origin || !platformApexDomain) {
+    return false;
+  }
+
+  try {
+    const { protocol, hostname } = new URL(origin);
+    const normalizedHostname = normalizeHostname(hostname);
+    const normalizedPlatformApex = normalizeHostname(platformApexDomain);
+
+    if (!normalizedHostname || !normalizedPlatformApex) {
+      return false;
+    }
+
+    if (protocol !== "http:" && protocol !== "https:") {
+      return false;
+    }
+
+    return (
+      normalizedHostname === normalizedPlatformApex ||
+      normalizedHostname.endsWith(`.${normalizedPlatformApex}`)
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
 function isDevelopmentOrigin(origin, nodeEnv) {
   if (nodeEnv === "production") {
     return false;
@@ -24,9 +55,14 @@ function isDevelopmentOrigin(origin, nodeEnv) {
   }
 }
 
-function createCorsOriginResolver({ allowedOrigins, nodeEnv }) {
+function createCorsOriginResolver({ allowedOrigins, nodeEnv, platformApexDomain }) {
   return function resolveCorsOrigin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin) || isDevelopmentOrigin(origin, nodeEnv)) {
+    if (
+      !origin ||
+      allowedOrigins.has(origin) ||
+      isDevelopmentOrigin(origin, nodeEnv) ||
+      isPlatformOrigin(origin, platformApexDomain)
+    ) {
       callback(null, true);
       return;
     }

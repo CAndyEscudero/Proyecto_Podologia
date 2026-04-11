@@ -24,6 +24,7 @@ app.use(
     origin: createCorsOriginResolver({
       allowedOrigins,
       nodeEnv: env.nodeEnv,
+      platformApexDomain: env.platformApexDomain,
     }),
     credentials: true,
   })

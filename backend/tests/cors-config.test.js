@@ -41,3 +41,27 @@ test("createCorsOriginResolver permite origins configurados y bloquea los demas"
   assert.equal(callbackArgs[0] instanceof Error, true);
   assert.match(callbackArgs[0].message, /Origin not allowed by CORS/);
 });
+
+test("createCorsOriginResolver permite subdominios de la plataforma cuando coincide el apex", () => {
+  const env = {
+    frontendUrl: "https://resergo.com.ar",
+    appBaseUrl: "https://resergo.com.ar",
+  };
+  const resolver = createCorsOriginResolver({
+    allowedOrigins: buildAllowedOrigins(env),
+    nodeEnv: "production",
+    platformApexDomain: "resergo.com.ar",
+  });
+
+  let callbackArgs = null;
+  resolver("https://pies-sanos-venado.resergo.com.ar", (...args) => {
+    callbackArgs = args;
+  });
+  assert.deepEqual(callbackArgs, [null, true]);
+
+  resolver("https://otro.com.ar", (...args) => {
+    callbackArgs = args;
+  });
+  assert.equal(callbackArgs[0] instanceof Error, true);
+  assert.match(callbackArgs[0].message, /Origin not allowed by CORS/);
+});

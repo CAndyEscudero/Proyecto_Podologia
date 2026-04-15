@@ -1,0 +1,60 @@
+@use '../../styles/variables' as *;
+
+.section {
+  padding: 80px 20px;
+  background: $white;
+}
+
+.container {
+  max-width: $container;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: 28px;
+  box-shadow: $shadow;
+
+  h3 {
+    color: $secondary;
+    font-size: 2rem;
+  }
+}
+
+.kicker {
+  color: $primary;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.description {
+  color: $text-light;
+  line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: $text;
+  line-height: 1.6;
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

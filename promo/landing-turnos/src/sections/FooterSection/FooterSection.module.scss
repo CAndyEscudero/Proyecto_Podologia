@@ -1,0 +1,43 @@
+@use '../../styles/variables' as *;
+
+.footer {
+  padding: 30px 20px;
+  background: $secondary;
+  color: $white;
+}
+
+.container {
+  max-width: $container;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  a {
+    opacity: 0.9;
+
+    &:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+  }
+}
+
+@media (max-width: 680px) {
+  .topRow {
+    flex-direction: column;
+  }
+}

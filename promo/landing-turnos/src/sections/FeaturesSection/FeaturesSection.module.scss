@@ -1,0 +1,50 @@
+@use '../../styles/variables' as *;
+
+.section {
+  padding: 80px 20px;
+}
+
+.container {
+  max-width: $container;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+.card {
+  background: $white;
+  border-radius: $radius-lg;
+  padding: 24px;
+  box-shadow: $shadow;
+  border: 1px solid $border;
+
+  h3 {
+    margin: 14px 0 10px;
+    color: $secondary;
+  }
+
+  p {
+    color: $text-light;
+    line-height: 1.6;
+  }
+}
+
+.icon {
+  color: $primary;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

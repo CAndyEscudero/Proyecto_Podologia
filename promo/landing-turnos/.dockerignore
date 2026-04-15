@@ -1,0 +1,5 @@
+node_modules
+dist
+.chrome-profile
+.codex-vite.*
+*.log

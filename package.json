@@ -5,7 +5,10 @@
   "scripts": {
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
+    "dev:promo": "npm --prefix promo/landing-turnos run dev",
     "build:frontend": "npm --prefix frontend run build",
+    "build:promo": "npm --prefix promo/landing-turnos run build",
+    "lint:promo": "npm --prefix promo/landing-turnos run lint",
     "db:up": "docker compose up -d mysql adminer",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mysql",

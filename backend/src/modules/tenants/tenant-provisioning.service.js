@@ -19,6 +19,8 @@ const RESERVED_TENANT_SLUGS = new Set([
   "app",
   "assets",
   "blog",
+  "demo",
+  "domains",
   "docs",
   "help",
   "mail",

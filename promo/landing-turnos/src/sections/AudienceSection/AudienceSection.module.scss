@@ -1,0 +1,38 @@
+@use '../../styles/variables' as *;
+
+.section {
+  padding: 80px 20px;
+}
+
+.container {
+  max-width: $container;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.item {
+  background: $white;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: 20px;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: $shadow;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

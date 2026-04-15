@@ -1,0 +1,25 @@
+{
+	email {$ACME_EMAIL}
+
+	on_demand_tls {
+		ask {$CADDY_ASK_URL}
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+
+	encode zstd gzip
+
+	@promo_hosts host {$PLATFORM_APEX_DOMAIN} www.{$PLATFORM_APEX_DOMAIN}
+
+	handle @promo_hosts {
+		reverse_proxy promo-web:80
+	}
+
+	handle {
+		reverse_proxy core-web:80
+	}
+}

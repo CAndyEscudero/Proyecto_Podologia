@@ -1,6 +1,8 @@
 const { prisma } = require("../../config/prisma");
 const { env } = require("../../config/env");
 
+const PLATFORM_TECHNICAL_SUBDOMAINS = new Set(["www", "app", "demo", "domains"]);
+
 function normalizeHostname(value) {
   const input = String(value || "").trim().toLowerCase();
 
@@ -18,7 +20,22 @@ function normalizeHostname(value) {
 
 function isPlatformTechnicalHostname(hostname) {
   const platformApex = String(env.platformApexDomain || "").trim().toLowerCase();
-  return Boolean(platformApex && hostname === platformApex);
+
+  if (!platformApex) {
+    return false;
+  }
+
+  if (hostname === platformApex) {
+    return true;
+  }
+
+  for (const subdomain of PLATFORM_TECHNICAL_SUBDOMAINS) {
+    if (hostname === `${subdomain}.${platformApex}`) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function canIssueTlsForHostname(hostname) {

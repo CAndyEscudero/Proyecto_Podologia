@@ -1,0 +1,35 @@
+@use '../../styles/variables' as *;
+
+.section {
+  padding: 80px 20px;
+}
+
+.container {
+  max-width: $container;
+  margin: 0 auto;
+}
+
+.content {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(29, 78, 216, 0.04));
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: 40px 28px;
+  box-shadow: $shadow;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto 28px;
+  max-width: 760px;
+  padding-left: 20px;
+  color: $text;
+  line-height: 1.7;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

@@ -1,16 +1,4 @@
-{
-	email {$ACME_EMAIL}
-
-	on_demand_tls {
-		ask {$CADDY_ASK_URL}
-	}
-}
-
-https:// {
-	tls {
-		on_demand
-	}
-
+:80 {
 	encode zstd gzip
 
 	handle /health {

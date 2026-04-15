@@ -72,7 +72,7 @@ services:
       timeout: 5s
       retries: 10
 
-  web:
+  core-web:
     build:
       context: ./frontend
       args:
@@ -82,13 +82,30 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+  promo-web:
+    build:
+      context: ./promo/landing-turnos
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      core-web:
+        condition: service_started
+      promo-web:
+        condition: service_started
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
+      PLATFORM_APEX_DOMAIN: ${PLATFORM_APEX_DOMAIN}
       CADDY_ASK_URL: http://backend:4000/internal/platform/tls-allow?secret=${CADDY_ON_DEMAND_ASK_SECRET}
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      - ./infra/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
 

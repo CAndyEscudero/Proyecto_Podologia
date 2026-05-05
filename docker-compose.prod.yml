@@ -60,6 +60,8 @@ services:
       node src/server.js"
     expose:
       - "4000"
+    volumes:
+      - backend_uploads:/app/storage/uploads
     healthcheck:
       test:
         [
@@ -111,5 +113,6 @@ services:
 
 volumes:
   mysql_data:
+  backend_uploads:
   caddy_data:
   caddy_config:
